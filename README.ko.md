@@ -2,76 +2,81 @@
 
 [English](README.md) | **한국어**
 
-![알림과 카테고리 타일을 보여주는 오버뷰 카드](images/overview-card-ko.jpg)
+![알림과 직접 조작이 되는 방 단위 섹션을 보여주는 오버뷰](images/overview-card-ko.jpg)
 
 *실제 카드 JavaScript와 모의 상태로 렌더링했습니다. 로컬 미리보기이며 실제 기기 검증이 아닙니다.*
 
 <details>
-<summary>다른 상태와 어두운 테마 보기</summary>
+<summary>모바일 레이아웃, 어두운 테마, 요약 타일 보기</summary>
 
-![모든 항목이 정상일 때](images/overview-card-clear-ko.jpg)
-
-![일부 기기가 응답하지 않을 때](images/overview-card-offline-ko.jpg)
+![모바일 레이아웃](images/overview-card-mobile-ko.jpg)
 
 ![어두운 테마](images/overview-card-dark-ko.jpg)
 
+![요약 타일](images/overview-tiles-ko.jpg)
+
 </details>
+
+익숙한 오버뷰 구성을 유지하는 카드입니다. **방 단위 섹션의 헤더에 요약을 보여주고 그 아래에 실제 조작 행을 그대로** 두며, 확인이 필요한 항목은 **알림 띠**로 보여줍니다. 조작 행은 [Compact Cards](https://github.com/eigger/hass-compact-cards)의 `compact-home-panel`이라서 오버뷰에서 바로 조명을 켜고 끄고, 냉난방을 조절하고, 센서 상세를 열 수 있습니다.
+
+`custom:compact-overview-card` · JavaScript 한 파일 · 섹션은 Compact Cards의 `compact-cards.js`가 필요합니다(요약 타일은 불필요)
 
 [카드 가이드](docs/compact-overview-card.md) · [쇼케이스](docs/showcase.md) · [쇼케이스 설정](examples/showcase.yaml) · [기준 문서](STANDARDS.md)
 
-Home Assistant 오버뷰용 요약 카드. 방/기기 상세는 하위 뷰에 맡기고, 홈 화면에서는 **카테고리별 한 줄 요약**과 **확인이 필요한 알림**만 보여줍니다.
-
-`custom:compact-overview-card` · 단일 JS 파일, 빌드/외부 라이브러리 없음 · 상태 읽기 전용(서비스 호출 없음)
-
 ## 설치
 
-`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 JavaScript 모듈로 등록합니다 (`/local/compact-overview-card.js`). HACS 사용 시 Custom repositories에 이 저장소를 **Dashboard**로 추가합니다.
+`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 JavaScript 모듈로 등록합니다 (`/local/compact-overview-card.js`). 섹션은 `compact-home-panel`을 사용하므로 [Compact Cards](https://github.com/eigger/hass-compact-cards)도 설치하고 리소스를 등록해야 합니다. HACS 사용 시 Custom repositories에 이 저장소를 **Dashboard**로 추가합니다.
 
 ## 예제
 
 ```yaml
 type: custom:compact-overview-card
-name: 우리집
-columns: auto            # auto | 2 | 3 | 4
+name: 우리집 요약
 alerts:                  # 조건이 맞을 때만 표시, 없으면 높이 0
   - entity: binary_sensor.kitchen_leak
     name: 누수 · 주방
     when: { state: "on" }
     level: critical      # warning(기본) | critical
     navigation_path: /lovelace/rooms
-tiles:
-  - type: count
-    name: 조명
+sections:
+  - name: 조명
     icon: mdi:lightbulb-group
-    entities: [light.living, light.bedroom, switch.kitchen]
-    navigation_path: /lovelace/rooms
-  - type: climate
-    name: 냉난방
+    navigation_path: /lovelace/rooms      # 섹션 제목을 누르면 이동
+    columns: 2                            # 조작 행의 열 수: auto | 1 | 2
+    summary:                              # 헤더의 한 줄 요약(타일과 같은 옵션)
+      type: count
+      entities: [light.living, light.bedroom, switch.kitchen]
+    badges:                               # 요약 옆에 표시할 센서 값
+      - { entity: sensor.living_illuminance, name: 거실 조도 }
+    items:                                # compact-home-panel 항목을 그대로 사용
+      - { entity: light.living, name: 거실, tap_action: { action: toggle } }
+      - { entity: light.bedroom, name: 침실, tap_action: { action: toggle } }
+      - { entity: switch.kitchen, name: 주방, tap_action: { action: toggle } }
+  - name: 냉난방
     icon: mdi:thermostat
-    entities: [climate.living_heater, climate.living_ac]
-    value_entity: sensor.living_temperature
-  - type: status
-    name: 가전
-    icon: mdi:washing-machine
-    idle_text: 모두 대기
+    navigation_path: /lovelace/rooms
+    summary: { type: climate, entities: [climate.living_heater, climate.living_ac], value_entity: sensor.living_temperature }
     items:
-      - { entity: sensor.washer_state, name: 세탁, active: [running], remaining: sensor.washer_remaining }
-  - type: value
-    name: 공기
-    icon: mdi:air-filter
-    entity: sensor.pm2_5
-    thresholds:
-      - { value: 35, direction: above, level: warning }
-      - { value: 75, direction: above, level: critical }
-  - type: health
-    name: 서버
-    icon: mdi:server
-    items:
-      - { entity: sensor.ssd_smart, problem: { state_not: PASSED }, level: critical }
-      - { entity: sensor.cpu_temp, thresholds: [{ value: 75, direction: above, level: warning }] }
+      - { type: climate, entity: climate.living_heater, name: 거실 보일러 }
+      - { type: climate, entity: climate.living_ac, name: 거실 에어컨 }
 ```
 
-## 타일 유형
+조작 없이 한눈에 보는 요약만 원하면 `sections` 대신 `tiles`를 사용합니다. [가이드](docs/compact-overview-card.md)를 참고하세요.
+
+## 섹션
+
+| 옵션 | 필수 | 설명 |
+| --- | --- | --- |
+| `name` | 예 | 섹션 제목. `navigation_path`가 있으면 제목이 해당 로컬 경로로 이동하는 버튼이 됩니다 |
+| `items` | 예 | `compact-home-panel` 항목(토글, 센서, `type: climate`/`light`/`cover`/`media`, 비교, 이동 등)을 [그 카드](https://github.com/eigger/hass-compact-cards/blob/main/docs/compact-home-panel.md)와 똑같이 사용 |
+| `icon`, `navigation_path` | 아니요 | 제목 아이콘, 로컬 경로 |
+| `columns` | 아니요 | 조작 행의 열 수: `auto`(기본), `1`, `2` |
+| `summary` | 아니요 | `name` 없는 타일 사양(`count`, `climate`, `status`, `value`, `health`). 헤더 오른쪽에 수준 색상으로 표시 |
+| `badges` | 아니요 | `[{ entity, name }]` 요약 옆 센서 값. 누르면 상세 정보 |
+
+최상위 `section_columns`(`auto`, `1`, `2`, `3`)는 섹션을 나눌 열 수입니다. `auto`는 카드 너비 640px부터 2열, 960px부터 3열입니다. 잘못된 `items`는 해당 섹션 안에 오류로 표시되고 다른 섹션에는 영향을 주지 않습니다.
+
+## 요약 타일 유형 (`tiles`, 섹션의 `summary`)
 
 | type | 필수 | 표시 |
 | --- | --- | --- |
@@ -81,7 +86,7 @@ tiles:
 | `value` | `entity` (선택 `secondary_entity`, `thresholds`) | 값 + 단위, 임계값 수준 |
 | `health` | `items[]` (`problem` 또는 `thresholds` 필수, 선택 `level`) | 최악 수준의 건수와 낮은 수준 건수, 없으면 `이상 없음`. `level`은 `problem`에만 적용되며 기본 `critical` |
 
-공통: `name`(필수), `icon`, `navigation_path`(없으면 대표 엔티티 상세 정보).
+타일 옵션: `name`(필수), `icon`, `navigation_path`(없으면 대표 엔티티 상세 정보). 조작 없는 격자는 `tiles`를 쓰며 `columns`(`auto`, `2`, `3`, `4`)는 타일에 적용됩니다.
 
 ## 규칙 참고
 
@@ -95,6 +100,7 @@ tiles:
 
 ## 원칙
 
+- 카드 자체는 서비스를 호출하지 않습니다. 섹션의 조작은 설정한 `compact-home-panel` 행이 수행합니다.
 - 정상/위험 기준은 카드가 추측하지 않습니다. `thresholds`, `problem`, `alerts.when`에 사용자가 쓴 규칙만 적용합니다.
 - 상태는 색 + `주의 ·`/`위험 ·` 문구 + 아이콘 변화로 함께 전달합니다.
 - 일부 엔티티가 `unavailable`이면 분모에서 빼고 `N개 확인 불가`로 따로 표시하며, 정상으로 간주하지 않습니다.

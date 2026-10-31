@@ -1,5 +1,6 @@
-// Compact overview card: category tiles that summarise a home at a glance.
-// Standalone resource. It reads entity states only and never calls services.
+// Compact overview card: category summaries and alerts, with room sections that embed
+// compact-home-panel rows for direct control. The card itself reads entity states only;
+// services are called by the embedded compact-home-panel rows.
 (() => {
   const TILE_TYPES = ['count', 'climate', 'status', 'value', 'health'];
   const LEVELS = { warning: 1, critical: 2 };
@@ -47,16 +48,46 @@
     if (!Array.isArray(list) || !list.length || list.some(i => !i || typeof i.entity !== 'string' || !ID.test(i.entity))) fail(`${where}에는 entity가 있는 항목 목록이 필요합니다.`);
   };
 
+  function validateSpec(tile, fail) {
+    for (const key of ['icon', 'idle_text']) if (tile[key] !== undefined && typeof tile[key] !== 'string') fail(`${key}는 문자열이어야 합니다.`);
+    if (tile.type === 'count' || tile.type === 'climate') entityList(tile.entities, 'entities', fail);
+    if (tile.type === 'climate' && tile.value_entity !== undefined && !ID.test(tile.value_entity)) fail('value_entity가 올바르지 않습니다.');
+    if (tile.type === 'value') {
+      if (typeof tile.entity !== 'string' || !ID.test(tile.entity)) fail('entity가 필요합니다.');
+      if (tile.secondary_entity !== undefined && !ID.test(tile.secondary_entity)) fail('secondary_entity가 올바르지 않습니다.');
+      validateThresholds(tile.thresholds, 'tiles', fail);
+    }
+    if (tile.type === 'status') {
+      itemList(tile.items, 'items', fail);
+      tile.items.forEach(item => {
+        if (item.active !== undefined && !Array.isArray(item.active)) fail('items[].active는 목록이어야 합니다.');
+        if (item.name !== undefined && typeof item.name !== 'string') fail('items[].name은 문자열이어야 합니다.');
+        if (item.remaining !== undefined && !ID.test(item.remaining)) fail('items[].remaining이 올바르지 않습니다.');
+      });
+    }
+    if (tile.type === 'health') {
+      itemList(tile.items, 'items', fail);
+      tile.items.forEach(item => {
+        validateRule(item.problem, 'items[].problem', fail);
+        validateThresholds(item.thresholds, 'items[]', fail);
+        if (item.problem === undefined && item.thresholds === undefined) fail('items[]에는 problem 또는 thresholds가 필요합니다. 카드는 정상 기준을 추측하지 않습니다.');
+        if (item.level !== undefined && !LEVELS[item.level]) fail('items[].level은 warning 또는 critical이어야 합니다.');
+      });
+    }
+  }
+
   class CompactOverviewCard extends HTMLElement {
     constructor() {
       super();
       this.attachShadow({ mode: 'open' });
-      this._tiles = []; this._alerts = [];
+      this._tiles = []; this._sections = [];
       this.shadowRoot.innerHTML = `<style>
         :host{display:block;container-type:inline-size;-webkit-tap-highlight-color:transparent;
           --compact-control-surface:color-mix(in srgb,var(--primary-text-color) 4%,transparent);
           --compact-icon-surface:color-mix(in srgb,var(--primary-color) 10%,transparent)}
-        ha-card{padding:10px;box-shadow:none;border-radius:var(--ha-card-border-radius,14px)}
+        ha-card.shell{padding:10px;box-shadow:none;border-radius:var(--ha-card-border-radius,14px)}
+        :host([data-bare]) ha-card.shell{--ha-card-background:transparent;--ha-card-border-width:0;--ha-card-box-shadow:none;padding:0}
+        .grid:empty{display:none}
         header{display:flex;align-items:center;gap:8px;min-height:28px;padding:0 2px 8px}
         header[hidden]{display:none}
         h2{margin:0;font-size:15px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -88,14 +119,36 @@
         .main small{font-size:13px;font-weight:400;letter-spacing:0;color:var(--secondary-text-color);margin-left:3px}
         .main small:empty{display:none}.sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
         @container(max-width:360px){.sub{display:none}.tile{padding:8px}}
-        @media(pointer:coarse){.tile{min-height:64px}}
+        .sections{columns:1;column-gap:12px;margin-top:12px}.sections:empty{display:none;margin:0}
+        :host([data-bare]) .sections{margin-top:0}
+        :host([section-columns="2"]) .sections{columns:2}
+        :host([section-columns="3"]) .sections{columns:3}
+        @container(min-width:640px){:host([section-columns=auto]) .sections{columns:2}}
+        @container(min-width:960px){:host([section-columns=auto]) .sections{columns:3}}
+        /* Sections flow down columns like HA's sections view, so short sections do not leave row gaps. */
+        ha-card.section{display:block;overflow:hidden;box-shadow:none;break-inside:avoid;margin-bottom:12px}
+        .sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;padding:4px 12px 0}
+        .sec-title{display:flex;align-items:center;gap:8px;flex:1 1 96px;min-width:96px;padding:4px;border:0;border-radius:6px;background:transparent;font-size:14px;font-weight:600;color:var(--primary-text-color)}
+        div.sec-title{cursor:default}
+        .sec-title span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .sec-title ha-icon{color:var(--secondary-text-color)}
+        .sec-sum{font-size:13px;color:var(--secondary-text-color);white-space:nowrap;font-variant-numeric:tabular-nums}
+        .sec-sum[data-level=warning]{color:var(--warning-color,#ffa600)}.sec-sum[data-level=critical]{color:var(--error-color,#db4437);font-weight:600}
+        .pill{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:999px;background:var(--compact-control-surface);padding:2px 8px;font-size:12px;min-height:28px;color:var(--primary-text-color)}
+        .pill small{color:var(--secondary-text-color);font-size:12px}
+        .sec-body compact-home-panel{display:block;--ha-card-background:transparent;--ha-card-border-width:0;--ha-card-box-shadow:none}
+        .sec-body .note{font-size:12px;color:var(--secondary-text-color);padding:8px 12px 12px}
+        @media(pointer:coarse){.tile{min-height:64px}.pill{min-height:36px}}
         @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-      </style><ha-card><header hidden><h2></h2><span class="badge" role="status" hidden></span></header><div class="alerts" aria-live="polite"></div><div class="grid"></div></ha-card>`;
+      </style><ha-card class="shell"><header hidden><h2></h2><span class="badge" role="status" hidden></span></header><div class="alerts" aria-live="polite"></div><div class="grid"></div></ha-card><div class="sections"></div>`;
     }
 
     setConfig(config) {
-      if (!config || !Array.isArray(config.tiles) || !config.tiles.length) throw new Error('tiles 목록이 필요합니다.');
+      if (!config || typeof config !== 'object') throw new Error('설정이 필요합니다.');
+      const tilesIn = config.tiles ?? [], sectionsIn = config.sections ?? [];
+      if (!Array.isArray(tilesIn) || !Array.isArray(sectionsIn) || !(tilesIn.length || sectionsIn.length)) throw new Error('tiles 또는 sections 목록이 필요합니다.');
       if (config.columns !== undefined && !['auto', 2, 3, 4].includes(config.columns)) throw new Error('columns는 auto, 2, 3, 4 중 하나여야 합니다.');
+      if (config.section_columns !== undefined && !['auto', 1, 2, 3].includes(config.section_columns)) throw new Error('section_columns는 auto, 1, 2, 3 중 하나여야 합니다.');
       if (config.alerts !== undefined && !Array.isArray(config.alerts)) throw new Error('alerts는 목록이어야 합니다.');
       (config.alerts || []).forEach((alert, i) => {
         const fail = m => { throw new Error(`alerts[${i}]: ${m}`); };
@@ -106,46 +159,42 @@
         if (alert.level !== undefined && !LEVELS[alert.level]) fail('level은 warning 또는 critical이어야 합니다.');
         if (alert.navigation_path !== undefined && !safePath(alert.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
       });
-      config.tiles.forEach((tile, i) => {
+      sectionsIn.forEach((section, i) => {
+        const fail = m => { throw new Error(`sections[${i}]: ${m}`); };
+        if (!section || typeof section !== 'object') fail('섹션은 객체여야 합니다.');
+        if (typeof section.name !== 'string' || !section.name) fail('name이 필요합니다.');
+        if (section.icon !== undefined && typeof section.icon !== 'string') fail('icon은 문자열이어야 합니다.');
+        if (section.navigation_path !== undefined && !safePath(section.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
+        if (section.columns !== undefined && !['auto', 1, 2].includes(section.columns)) fail('columns는 auto, 1, 2 중 하나여야 합니다.');
+        if (!Array.isArray(section.items) || !section.items.length || section.items.some(item => !item || typeof item !== 'object' || Array.isArray(item))) fail('items에는 compact-home-panel 항목 목록이 필요합니다.');
+        if (section.summary !== undefined) {
+          if (!section.summary || !TILE_TYPES.includes(section.summary.type)) fail(`summary.type은 ${TILE_TYPES.join(', ')} 중 하나여야 합니다.`);
+          validateSpec(section.summary, m => fail(`summary: ${m}`));
+        }
+        if (section.badges !== undefined && (!Array.isArray(section.badges) || section.badges.some(b => !b || typeof b.entity !== 'string' || !ID.test(b.entity) || (b.name !== undefined && typeof b.name !== 'string')))) fail('badges에는 entity가 있는 목록이 필요합니다.');
+      });
+      tilesIn.forEach((tile, i) => {
         const fail = m => { throw new Error(`tiles[${i}]: ${m}`); };
         if (!tile || typeof tile !== 'object') fail('타일은 객체여야 합니다.');
         if (!TILE_TYPES.includes(tile.type)) fail(`type은 ${TILE_TYPES.join(', ')} 중 하나여야 합니다.`);
         if (typeof tile.name !== 'string' || !tile.name) fail('name이 필요합니다.');
         if (tile.navigation_path !== undefined && !safePath(tile.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
-        for (const key of ['icon', 'idle_text']) if (tile[key] !== undefined && typeof tile[key] !== 'string') fail(`${key}는 문자열이어야 합니다.`);
-        if (tile.type === 'count' || tile.type === 'climate') entityList(tile.entities, 'entities', fail);
-        if (tile.type === 'climate' && tile.value_entity !== undefined && !ID.test(tile.value_entity)) fail('value_entity가 올바르지 않습니다.');
-        if (tile.type === 'value') {
-          if (typeof tile.entity !== 'string' || !ID.test(tile.entity)) fail('entity가 필요합니다.');
-          if (tile.secondary_entity !== undefined && !ID.test(tile.secondary_entity)) fail('secondary_entity가 올바르지 않습니다.');
-          validateThresholds(tile.thresholds, 'tiles', fail);
-        }
-        if (tile.type === 'status') {
-          itemList(tile.items, 'items', fail);
-          tile.items.forEach(item => {
-            if (item.active !== undefined && !Array.isArray(item.active)) fail('items[].active는 목록이어야 합니다.');
-            if (item.name !== undefined && typeof item.name !== 'string') fail('items[].name은 문자열이어야 합니다.');
-            if (item.remaining !== undefined && !ID.test(item.remaining)) fail('items[].remaining이 올바르지 않습니다.');
-          });
-        }
-        if (tile.type === 'health') {
-          itemList(tile.items, 'items', fail);
-          tile.items.forEach(item => {
-            validateRule(item.problem, 'items[].problem', fail);
-            validateThresholds(item.thresholds, 'items[]', fail);
-            if (item.problem === undefined && item.thresholds === undefined) fail('items[]에는 problem 또는 thresholds가 필요합니다. 카드는 정상 기준을 추측하지 않습니다.');
-            if (item.level !== undefined && !LEVELS[item.level]) fail('items[].level은 warning 또는 critical이어야 합니다.');
-          });
-        }
+        validateSpec(tile, fail);
       });
       const key = JSON.stringify(config);
       if (this._configKey === key) return;
       this._configKey = key; this._config = config;
       this.setAttribute('columns', config.columns ?? 'auto');
+      this.setAttribute('section-columns', config.section_columns ?? 'auto');
+      this.toggleAttribute('data-bare', !tilesIn.length);
       this._build(); this._render();
     }
     set hass(hass) { this._hass = hass; this._render(); }
-    getCardSize() { return Math.ceil((this._config?.tiles.length || 1) / 2) + 1 + (this._alertCount || 0) * 0.5; }
+    getCardSize() {
+      const sections = this._config?.sections ?? [];
+      const rows = sections.reduce((sum, section) => sum + 1 + section.items.length / 2, 0);
+      return Math.ceil(((this._config?.tiles ?? []).length / 2) + rows / 2) + 1 + (this._alertCount || 0) * 0.5;
+    }
     getGridOptions() { return { columns: 12, min_columns: 6 }; }
     static getStubConfig(hass) {
       const light = Object.keys(hass?.states || {}).filter(id => id.startsWith('light.')).slice(0, 3);
@@ -170,7 +219,7 @@
       const grid = root.querySelector('.grid'); grid.replaceChildren(); this._tiles = [];
       const header = root.querySelector('header');
       text(root.querySelector('h2'), this._config.name || '');
-      for (const tile of this._config.tiles) {
+      for (const tile of this._config.tiles ?? []) {
         const el = document.createElement('button'); el.className = 'tile';
         const ref = { tile, el };
         // Tap opens the entity that explains the summary (running appliance, worst item), not just the first one.
@@ -189,6 +238,68 @@
         this._tiles.push(ref);
       }
       header.hidden = !this._config.name && !(this._config.alerts || []).length;
+      this._buildSections();
+    }
+
+    _buildSections() {
+      const box = this.shadowRoot.querySelector('.sections'); box.replaceChildren(); this._sections = [];
+      for (const section of this._config.sections ?? []) {
+        const card = document.createElement('ha-card'); card.className = 'section';
+        const head = document.createElement('div'); head.className = 'sec-head';
+        const title = document.createElement(section.navigation_path ? 'button' : 'div'); title.className = 'sec-title';
+        if (section.navigation_path) { title.onclick = () => this._go(section.navigation_path); title.setAttribute('aria-label', `${section.name} 열기`); }
+        const icon = document.createElement('ha-icon'); icon.setAttribute('aria-hidden', 'true'); icon.icon = section.icon || 'mdi:circle-outline';
+        const name = document.createElement('span'); name.textContent = section.name;
+        title.append(icon, name);
+        const sum = document.createElement('span'); sum.className = 'sec-sum';
+        head.append(title, sum);
+        const badges = (section.badges || []).map(badge => {
+          const button = document.createElement('button'); button.className = 'pill';
+          const label = document.createElement('small'), value = document.createElement('span');
+          button.append(label, value); button.onclick = () => this._more(badge.entity); head.append(button);
+          return { badge, label, value, button };
+        });
+        const body = document.createElement('div'); body.className = 'sec-body';
+        card.append(head, body); box.append(card);
+        this._sections.push({ section, card, sum, badges, body });
+      }
+    }
+
+    _sectionSummary(section) {
+      if (!section.summary) return null;
+      const s = this._summarise({ ...section.summary, name: section.name });
+      const level = s.level || '', prefix = level === 'critical' ? '위험 · ' : level === 'warning' ? '주의 · ' : '';
+      return { level, text: [prefix + (s.number ?? ''), s.unit, s.label].filter(Boolean).join(' ') };
+    }
+
+    _renderSections(summaries) {
+      for (const [index, ref] of this._sections.entries()) {
+        const summary = summaries[index];
+        text(ref.sum, summary?.text ?? ''); attr(ref.sum, 'data-level', summary?.level ?? '');
+        for (const item of ref.badges) {
+          const state = this._hass.states[item.badge.entity];
+          text(item.label, item.badge.name || state?.attributes?.friendly_name || item.badge.entity);
+          text(item.value, this._format(state));
+          attr(item.button, 'title', `${item.label.textContent} ${item.value.textContent}`);
+        }
+        if (!ref.panel && !ref.failed) {
+          if (!customElements.get('compact-home-panel')) {
+            if (!ref.waiting) { ref.waiting = true; customElements.whenDefined('compact-home-panel').then(() => this._render()); }
+            const note = ref.body.querySelector('.note') || ref.body.appendChild(Object.assign(document.createElement('div'), { className: 'note' }));
+            text(note, 'compact-cards.js 리소스(compact-home-panel)가 필요합니다.');
+          } else {
+            try {
+              const panel = document.createElement('compact-home-panel');
+              panel.setConfig({ items: ref.section.items, columns: ref.section.columns ?? 'auto' });
+              ref.body.replaceChildren(panel); ref.panel = panel;
+            } catch (error) {
+              ref.failed = true;
+              ref.body.replaceChildren(Object.assign(document.createElement('div'), { className: 'note', textContent: `items 설정 오류: ${error.message}` }));
+            }
+          }
+        }
+        if (ref.panel) ref.panel.hass = this._hass;
+      }
     }
 
     _format(state) {
@@ -273,13 +384,15 @@
       hits.sort((a, b) => (LEVELS[b.alert.level || 'warning']) - (LEVELS[a.alert.level || 'warning']));
       this._renderAlerts(hits);
       const summaries = this._tiles.map(ref => this._summarise(ref.tile));
-      const flagged = hits.length + summaries.filter(s => s.level).length;
+      const sectionSummaries = this._sections.map(ref => this._sectionSummary(ref.section));
+      const flagged = hits.length + summaries.filter(s => s.level).length + sectionSummaries.filter(s => s?.level).length;
       const badge = this.shadowRoot.querySelector('.badge'), header = this.shadowRoot.querySelector('header');
       const hasAlerts = Boolean((this._config.alerts || []).length);
       badge.hidden = !hasAlerts;
       if (hasAlerts) text(badge, [flagged ? `${flagged}건 확인 필요` : '', unavailableAlerts ? `${unavailableAlerts}개 확인 불가` : ''].filter(Boolean).join(' · ') || '✓ 이상 없음');
       header.hidden = !this._config.name && !hasAlerts;
 
+      this._renderSections(sectionSummaries);
       for (const [index, ref] of this._tiles.entries()) {
         const s = summaries[index];
         ref.focus = s.focus;

@@ -14,7 +14,7 @@
 | --- | --- |
 | DOC-01/02/06 | Provide `README.md` (English) and `README.ko.md` (Korean) with reciprocal links, a bilingual guide under `docs/`, and documented development commands and verification limits. Integration-specific managed templates and install categories are not used. |
 | CI-01/03/08/11 | Card-specific Node workflows: validate with read access and publish in a separate write-enabled job at the same tag commit. Persisted checkout credentials are disabled, jobs have timeouts and concurrency, and shell inputs stay in environment variables. |
-| CI-05/06, DEP-01 principle | External actions are pinned to verified full commits with version comments; `npm ci` and the lockfile are retained. Happy DOM is development-only; no runtime dependency is introduced. |
+| CI-05/06, DEP-01 principle | External actions are pinned to verified full commits with version comments; `npm ci` and the lockfile are retained. Happy DOM is development-only. No runtime library is bundled; the optional `sections` feature uses the `compact-home-panel` element when the user has registered Compact Cards, and the previews download `compact-cards.js` into a git-ignored `vendor/` directory. |
 | CI-09 principle | Dependabot proposes npm and action updates weekly. Patch/minor PRs can squash auto-merge after required CI passes; major updates stay manual; no version increment is automated. |
 | REL-01/02/03 | SemVer, a stable tag/package version equality check, a changelog and manual release checks. Tag-triggered publishing attaches `compact-overview-card.js`. |
 | GOV-01 principle | The reviewed SHA, applicability and evidence are recorded here; this file is not a central integration checker configuration. |

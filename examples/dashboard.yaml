@@ -1,4 +1,5 @@
 # 오버뷰 뷰 한 장과 하위 뷰로 이동하는 최소 대시보드 예제입니다. 엔티티 ID와 경로를 환경에 맞게 변경하세요.
+# 섹션 행은 compact-cards.js(compact-home-panel)가 필요합니다.
 title: "집"
 views:
   - title: "홈"
@@ -10,22 +11,30 @@ views:
         cards:
           - type: "custom:compact-overview-card"
             name: "우리집 요약"
+            grid_options:
+              columns: "full"
             alerts:
               - entity: "binary_sensor.kitchen_leak"
                 name: "누수 · 주방"
                 when: { state: "on" }
                 level: "critical"
-            tiles:
-              - type: "count"
-                name: "조명"
+            sections:
+              - name: "조명"
                 icon: "mdi:lightbulb-group"
-                entities: ["light.living_room", "light.bedroom"]
                 navigation_path: "/lovelace/rooms"
-              - type: "value"
-                name: "에너지"
+                columns: 2
+                summary:
+                  type: "count"
+                  entities: ["light.living_room", "light.bedroom"]
+                items:
+                  - { entity: "light.living_room", name: "거실", tap_action: { action: "toggle" } }
+                  - { entity: "light.bedroom", name: "침실", tap_action: { action: "toggle" } }
+              - name: "에너지"
                 icon: "mdi:flash"
-                entity: "sensor.power"
                 navigation_path: "/lovelace/manage"
+                summary: { type: "value", entity: "sensor.power" }
+                items:
+                  - { entity: "sensor.power", name: "현재 전력", tap_action: { action: "more-info" } }
   - title: "공간"
     path: "rooms"
     icon: "mdi:floor-plan"

@@ -201,3 +201,62 @@ test('alert clicks navigate or open more-info and unsafe alert paths are rejecte
   alerts(card)[0].click();
   assert.equal(opened, 'lock.g');
 });
+
+const panelStub = "customElements.define('compact-home-panel',class extends HTMLElement{setConfig(c){if(c.items.some(i=>i.bad))throw new Error('bad item');this.cfg=c;}set hass(h){this.h=h;}});";
+function sectioned(config, states = {}, { stub = true } = {}) {
+  const window = new Window({ url: 'http://localhost/' }); window.eval(source); if (stub) window.eval(panelStub);
+  const card = window.document.createElement('compact-overview-card'); card.setConfig(config);
+  window.document.body.append(card); card.hass = { states, callService: () => { throw new Error('overview itself must not call services'); } };
+  return { window, card };
+}
+const sections = card => [...card.shadowRoot.querySelectorAll('.section')];
+
+test('sections embed compact-home-panel with the configured items and pass hass through', () => {
+  const items = [{ entity: 'light.a', name: 'A', tap_action: { action: 'toggle' } }, { type: 'climate', entity: 'climate.b', name: 'B' }];
+  const { card } = sectioned({ sections: [{ name: '조명', icon: 'mdi:lightbulb', columns: 2, items }] }, { 'light.a': state('light.a', 'on') });
+  const panel = card.shadowRoot.querySelector('compact-home-panel');
+  assert.deepEqual(JSON.parse(JSON.stringify(panel.cfg)), { items, columns: 2 });
+  assert.equal(panel.h.states['light.a'].state, 'on');
+  assert.equal(card.hasAttribute('data-bare'), true);
+});
+
+test('section header shows summary with level, badges and navigates on tap', () => {
+  const { window, card } = sectioned({ sections: [{
+    name: '공기', navigation_path: '/lovelace/air', items: [{ entity: 'sensor.pm' }],
+    summary: { type: 'value', entity: 'sensor.pm', thresholds: [{ value: 35, direction: 'above', level: 'warning' }] },
+    badges: [{ entity: 'sensor.temp', name: '온도' }],
+  }] }, { 'sensor.pm': state('sensor.pm', '48', { unit_of_measurement: 'µg/m³' }), 'sensor.temp': state('sensor.temp', '21', { unit_of_measurement: '°C' }) });
+  const [section] = sections(card);
+  assert.match(section.querySelector('.sec-sum').textContent, /^주의 · 48/);
+  assert.equal(section.querySelector('.sec-sum').dataset.level, 'warning');
+  assert.match(section.querySelector('.pill').textContent, /온도/);
+  let located = 0; window.addEventListener('location-changed', () => located++);
+  section.querySelector('.sec-title').click();
+  assert.equal(located, 1); assert.equal(window.location.pathname, '/lovelace/air');
+});
+
+test('a missing compact-home-panel shows a note and recovers once defined', async () => {
+  const { window, card } = sectioned({ sections: [{ name: 'x', items: [{ entity: 'light.a' }] }] }, { 'light.a': state('light.a', 'on') }, { stub: false });
+  assert.match(card.shadowRoot.querySelector('.note').textContent, /compact-cards\.js/);
+  window.eval(panelStub);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.ok(card.shadowRoot.querySelector('compact-home-panel'));
+});
+
+test('invalid embedded items are reported inside the section instead of breaking the card', () => {
+  const { card } = sectioned({ sections: [{ name: 'x', items: [{ bad: true }] }, { name: 'y', items: [{ entity: 'light.a' }] }] }, { 'light.a': state('light.a', 'on') });
+  assert.match(sections(card)[0].querySelector('.note').textContent, /items 설정 오류: bad item/);
+  assert.ok(sections(card)[1].querySelector('compact-home-panel'));
+});
+
+test('section configs are validated and tiles remain optional when sections exist', () => {
+  for (const config of [
+    { sections: [{ items: [{ entity: 'light.a' }] }] },
+    { sections: [{ name: 'x', items: [] }] },
+    { sections: [{ name: 'x', items: [{ entity: 'light.a' }], columns: 3 }] },
+    { sections: [{ name: 'x', items: [{ entity: 'light.a' }], summary: { type: 'nope' } }] },
+    { sections: [{ name: 'x', items: [{ entity: 'light.a' }], navigation_path: '//evil' }] },
+    { sections: [{ name: 'x', items: [{ entity: 'light.a' }] }], section_columns: 5 },
+  ]) assert.throws(() => sectioned(config));
+  assert.doesNotThrow(() => sectioned({ sections: [{ name: 'x', items: [{ entity: 'light.a' }] }] }));
+});
