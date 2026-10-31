@@ -2,10 +2,15 @@
 
 ## Unreleased
 
+## 0.3.1 — 2026-10-31
+
+- Add group `span` (2 or 3 columns on wide cards) so wide rows such as climate controls stay on one line.
+- Pack groups at their natural height instead of stretching them to equal row heights, so short groups no longer show blank space and columns have no gaps (a ResizeObserver assigns each group its row span).
+
 ## 0.3.0 — 2026-10-31
 
 - Add quick-control `controls` chips to groups: toggle lights/switches/fans, step climate targets with −/+ (one debounced request, clamped to the entity range) and a power button, press buttons and run scripts/scenes with optional confirmation, and open details for sensors. Chips are dimmed and never commanded while unavailable; duplicate taps are blocked and failures are reported.
-- Lay groups out as row-aligned grid cells (heights match) with a bold header summary; groups stack in one column on mobile. `items` (embedded `compact-home-panel` rows) are now optional.
+- Lay groups out as a packed grid (natural heights, no blank space) with a bold header summary; groups stack in one column on mobile. `items` (embedded `compact-home-panel` rows) are now optional.
 
 ## 0.2.0 — 2026-10-31
 

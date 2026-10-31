@@ -72,10 +72,11 @@ Prefer a controls-free summary grid? Use `tiles` instead of `sections`; see [the
 | `controls` | yes* | Quick-control chips (below) |
 | `items` | yes* | Optional `compact-home-panel` rows shown under the chips (needs Compact Cards). `*` at least one of `controls`/`items` |
 | `icon`, `navigation_path` | no | Title icon and local path |
+| `span` | no | `2` or `3`: let the group take that many columns when the card is at least 700px (1050px for 3), for example so climate rows fit on one line. Ignored on narrower cards |
 | `summary` | no | A tile spec without `name` (`count`, `climate`, `status`, `value`, `health`); shown bold in the header, coloured by level |
 | `badges` | no | `[{ entity, name }]` readings next to the summary; tap opens the entity |
 
-Top-level `section_columns` (`auto`, `1`, `2`, `3`) sets the group columns. `auto` fills the width with groups at least 320px wide, aligned in rows so heights match; on mobile it is a single column. Put the card in a section with `column_span` (for example `3`) in Home Assistant's sections view to use the full width on a PC.
+Top-level `section_columns` (`auto`, `1`, `2`, `3`) sets the group columns. `auto` fills the width with groups at least 320px wide, packed from the top at their natural height with no blank space inside cards or gaps between them; on mobile it is a single column. Put the card in a section with `column_span` (for example `3`) in Home Assistant's sections view to use the full width on a PC.
 
 ### Quick-control chips
 

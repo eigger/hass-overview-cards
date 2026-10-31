@@ -6,9 +6,9 @@ Run `python3 -m http.server 8131 --bind 127.0.0.1` in the repository root and op
 
 | Image | Source page | Viewport |
 | --- | --- | --- |
-| `overview-card.jpg` | `preview.html?scenario=alert&width=1120&capture=true` | 1136 × 700 |
-| `overview-card-clear.jpg` | `preview.html?scenario=normal&width=1120&capture=true` | 1136 × 640 |
-| `overview-card-dark.jpg` | `preview.html?scenario=alert&width=1120&theme=dark&capture=true` | 1136 × 700 |
+| `overview-card.jpg` | `preview.html?scenario=alert&width=1120&capture=true` | 1136 × 740 |
+| `overview-card-clear.jpg` | `preview.html?scenario=normal&width=1120&capture=true` | 1136 × 680 |
+| `overview-card-dark.jpg` | `preview.html?scenario=alert&width=1120&theme=dark&capture=true` | 1136 × 740 |
 | `overview-card-mobile.jpg` | `preview.html?scenario=alert&width=390&capture=true` in a 390px frame | 390 × 1650 |
 | `overview-tiles.jpg`, `overview-tiles-clear.jpg`, `overview-tiles-offline.jpg` | `preview.html?variant=tiles&scenario=alert\|normal\|offline&capture=true` | 422 × 432 / 336 / 336 |
 | `showcase-light.jpg`, `showcase-dark.jpg` | `showcase.html?capture=true` (`&theme=dark`) | 1200 × 1320 |

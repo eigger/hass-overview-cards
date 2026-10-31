@@ -139,14 +139,17 @@
         .main small{font-size:13px;font-weight:400;letter-spacing:0;color:var(--secondary-text-color);margin-left:3px}
         .main small:empty{display:none}.sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
         @container(max-width:360px){.sub{display:none}.tile{padding:8px}}
-        /* Row-aligned grid: sections in a row share a height, so nothing ends up ragged. */
-        .sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:12px;margin-top:12px;align-items:stretch}.sections:empty{display:none;margin:0}
+        /* Packed grid: each group keeps its natural height and is placed into 4px row units (see _layoutSections), so columns have no blank space inside cards or gaps between them. */
+        .sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));grid-auto-rows:4px;grid-auto-flow:row dense;column-gap:12px;row-gap:0;margin-top:12px;align-items:start}.sections:empty{display:none;margin:0}
         :host([data-bare]) .sections{margin-top:0}
         :host([section-columns="1"]) .sections{grid-template-columns:minmax(0,1fr)}
         :host([section-columns="2"]) .sections{grid-template-columns:repeat(2,minmax(0,1fr))}
         :host([section-columns="3"]) .sections{grid-template-columns:repeat(3,minmax(0,1fr))}
         @container(max-width:639px){:host([section-columns="2"]) .sections,:host([section-columns="3"]) .sections{grid-template-columns:minmax(0,1fr)}}
-        ha-card.section{display:flex;flex-direction:column;overflow:hidden;box-shadow:none}
+        ha-card.section{display:flex;flex-direction:column;overflow:hidden;box-shadow:none;align-self:start}
+        /* A group may span several columns (for example so climate rows fit on one line) when the card is wide enough. */
+        @container(min-width:700px){ha-card.section[data-span="2"],ha-card.section[data-span="3"]{grid-column:span 2}}
+        @container(min-width:1050px){ha-card.section[data-span="3"]{grid-column:span 3}}
         .sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;padding:4px 12px 0}
         .sec-title{display:flex;align-items:center;gap:8px;flex:1 1 96px;min-width:96px;padding:4px;border:0;border-radius:6px;background:transparent;text-align:left;font:inherit;font-size:14px;font-weight:600;color:var(--primary-text-color)}
         div.sec-title{cursor:default}
@@ -210,6 +213,7 @@
         if (section.icon !== undefined && typeof section.icon !== 'string') fail('icon은 문자열이어야 합니다.');
         if (section.navigation_path !== undefined && !safePath(section.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
         if (section.columns !== undefined && !['auto', 1, 2].includes(section.columns)) fail('columns는 auto, 1, 2 중 하나여야 합니다.');
+        if (section.span !== undefined && ![1, 2, 3].includes(section.span)) fail('span은 1, 2, 3 중 하나여야 합니다.');
         const hasItems = section.items !== undefined, hasControls = section.controls !== undefined;
         if (!hasItems && !hasControls) fail('controls 또는 items가 필요합니다.');
         if (hasItems && (!Array.isArray(section.items) || !section.items.length || section.items.some(item => !item || typeof item !== 'object' || Array.isArray(item)))) fail('items에는 compact-home-panel 항목 목록이 필요합니다.');
@@ -235,6 +239,21 @@
       this.setAttribute('section-columns', config.section_columns ?? 'auto');
       this.toggleAttribute('data-bare', !tilesIn.length);
       this._build(); this._render();
+    }
+    connectedCallback() {
+      if (typeof ResizeObserver === 'function' && !this._resize) this._resize = new ResizeObserver(() => this._layoutSections());
+      for (const ref of this._sections) this._resize?.observe(ref.card);
+      this._layoutSections();
+    }
+    disconnectedCallback() { this._resize?.disconnect(); }
+    // Packs groups masonry-style: row span = group height in 4px units plus the 12px gap.
+    _layoutSections() {
+      for (const ref of this._sections) {
+        const height = ref.card.getBoundingClientRect().height;
+        if (!height) continue;
+        const span = `span ${Math.ceil((height + 12) / 4)}`;
+        if (ref.card.style.gridRowEnd !== span) ref.card.style.gridRowEnd = span;
+      }
     }
     set hass(hass) { this._hass = hass; this._render(); }
     getCardSize() {
@@ -423,8 +442,10 @@
 
     _buildSections() {
       const box = this.shadowRoot.querySelector('.sections'); box.replaceChildren(); this._sections = [];
+      this._resize?.disconnect();
       for (const section of this._config.sections ?? []) {
         const card = document.createElement('ha-card'); card.className = 'section';
+        if (section.span && section.span > 1) card.dataset.span = String(section.span);
         const head = document.createElement('div'); head.className = 'sec-head';
         const title = document.createElement(section.navigation_path ? 'button' : 'div'); title.className = 'sec-title';
         if (section.navigation_path) { title.onclick = () => this._go(section.navigation_path); title.setAttribute('aria-label', `${section.name} 열기`); }
@@ -444,6 +465,7 @@
         const body = document.createElement('div'); body.className = 'sec-body';
         card.append(head, controls, body); box.append(card);
         this._sections.push({ section, card, sum, badges, body, chips });
+        this._resize?.observe(card);
       }
     }
 

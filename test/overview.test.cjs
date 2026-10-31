@@ -327,3 +327,10 @@ test('control validation rejects bad entries and sections may use controls witho
   assert.throws(() => controlled({ sections: [{ name: 'x' }] }, {}), /controls 또는 items/);
   assert.doesNotThrow(() => controlled({ sections: [{ name: 'x', controls: [{ entity: 'light.a' }] }] }, {}));
 });
+
+test('group span is validated and exposed for wide layouts', () => {
+  assert.throws(() => sectioned({ sections: [{ name: 'x', span: 4, items: [{ entity: 'light.a' }] }] }), /span/);
+  const { card } = sectioned({ sections: [{ name: 'x', span: 2, items: [{ entity: 'light.a' }] }, { name: 'y', items: [{ entity: 'light.a' }] }] });
+  const [wide, normal] = sections(card);
+  assert.equal(wide.dataset.span, '2'); assert.equal(normal.dataset.span, undefined);
+});
