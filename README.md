@@ -72,7 +72,7 @@ Prefer a controls-free summary grid? Use `tiles` instead of `sections`; see [the
 | `controls` | yes* | Quick-control chips (below) |
 | `items` | yes* | Optional `compact-home-panel` rows shown under the chips (needs Compact Cards). `*` at least one of `controls`/`items` |
 | `icon`, `navigation_path` | no | Title icon and local path |
-| `span` | no | `2` or `3`: let the group take that many columns when the card is at least 700px (1050px for 3), for example so climate rows fit on one line. Ignored on narrower cards |
+| `span` | no | `1`, `2` or `3` (default `2` for groups that embed `type: climate` rows, otherwise `1`): let the group take that many columns when the card is at least 700px (1050px for 3), for example so climate rows fit on one line. Ignored on narrower cards |
 | `summary` | no | A tile spec without `name` (`count`, `climate`, `status`, `value`, `health`); shown bold in the header, coloured by level |
 | `badges` | no | `[{ entity, name }]` readings next to the summary; tap opens the entity |
 

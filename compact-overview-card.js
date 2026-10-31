@@ -445,7 +445,9 @@
       this._resize?.disconnect();
       for (const section of this._config.sections ?? []) {
         const card = document.createElement('ha-card'); card.className = 'section';
-        if (section.span && section.span > 1) card.dataset.span = String(section.span);
+        // Groups with climate rows span two columns on wide cards by default, so the mode buttons stay on one line; `span: 1` opts out.
+        const span = section.span ?? (section.items?.some(item => item.type === 'climate') ? 2 : 1);
+        if (span > 1) card.dataset.span = String(span);
         const head = document.createElement('div'); head.className = 'sec-head';
         const title = document.createElement(section.navigation_path ? 'button' : 'div'); title.className = 'sec-title';
         if (section.navigation_path) { title.onclick = () => this._go(section.navigation_path); title.setAttribute('aria-label', `${section.name} 열기`); }

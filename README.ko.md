@@ -70,7 +70,7 @@ sections:
 | `controls` | 예* | 빠른 조작 칩(아래) |
 | `items` | 예* | 칩 아래에 표시할 `compact-home-panel` 행(Compact Cards 필요). `*` `controls`/`items` 중 하나 이상 |
 | `icon`, `navigation_path` | 아니요 | 제목 아이콘, 로컬 경로 |
-| `span` | 아니요 | `2` 또는 `3`: 카드 폭이 700px 이상(3은 1050px 이상)일 때 그룹이 그 열 수만큼 차지합니다. 냉난방 행을 한 줄에 표시하려는 경우 등에 사용하며, 더 좁은 카드에서는 무시합니다 |
+| `span` | 아니요 | `1`, `2`, `3`(`type: climate` 행이 들어간 그룹은 기본 `2`, 그 외 `1`): 카드 폭이 700px 이상(3은 1050px 이상)일 때 그룹이 그 열 수만큼 차지합니다. 냉난방 행을 한 줄에 표시하려는 경우 등에 사용하며, 더 좁은 카드에서는 무시합니다 |
 | `summary` | 아니요 | `name` 없는 타일 사양(`count`, `climate`, `status`, `value`, `health`). 헤더에 굵게, 수준 색상으로 표시 |
 | `badges` | 아니요 | `[{ entity, name }]` 요약 옆 센서 값. 누르면 상세 정보 |
 

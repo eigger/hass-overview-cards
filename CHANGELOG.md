@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.3.2 — 2026-10-31
+
+- Groups that embed `type: climate` rows now span two columns on cards at least 700px wide by default, so air-conditioner mode buttons stay on one line without extra configuration; set `span: 1` to opt out.
+
 ## 0.3.1 — 2026-10-31
 
 - Add group `span` (2 or 3 columns on wide cards) so wide rows such as climate controls stay on one line.

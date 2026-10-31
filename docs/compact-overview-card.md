@@ -60,7 +60,7 @@ sections:
 | `items` | 예* | — | 칩 아래에 표시할 `compact-home-panel` 행([해당 카드](https://github.com/eigger/hass-compact-cards/blob/main/docs/compact-home-panel.md)와 동일, Compact Cards 필요). `*` 둘 중 하나 이상 |
 | `icon` | 아니요 | `mdi:circle-outline` | 제목 아이콘 |
 | `navigation_path` | 아니요 | 없음 | `/`로 시작하는 로컬 경로 |
-| `span` | 아니요 | `1` | `2` 또는 `3`. 카드 폭 700px 이상(3은 1050px 이상)에서 그룹이 여러 열을 차지해 냉난방 행처럼 넓은 행이 한 줄에 표시됩니다. 좁은 카드(모바일)에서는 무시합니다 |
+| `span` | 아니요 | `1`(`type: climate` 행이 있는 그룹은 `2`) | `1`, `2`, `3`. 카드 폭 700px 이상(3은 1050px 이상)에서 그룹이 여러 열을 차지해 냉난방 행처럼 넓은 행이 한 줄에 표시됩니다. 좁은 카드(모바일)에서는 무시합니다 |
 | `columns` | 아니요 | `auto` | `items`의 열 수 `auto`, `1`, `2` |
 | `summary` | 아니요 | 없음 | `name` 없는 타일 사양. 헤더에 `3/8 켜짐`, `주의 · 48 µg/m³` 형태로 표시 |
 | `badges` | 아니요 | 없음 | `[{entity, name}]`. 헤더의 센서 값. 누르면 상세 정보 |
