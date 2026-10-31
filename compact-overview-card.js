@@ -4,7 +4,9 @@
   const TILE_TYPES = ['count', 'climate', 'status', 'value', 'health'];
   const LEVELS = { warning: 1, critical: 2 };
   const ID = /^[a-z_]+\.[a-z0-9_]+$/;
-  const unusable = s => !s || s.state === 'unknown' || s.state === 'unavailable';
+  const unusable = s => !s || typeof s.state !== 'string' || s.state === 'unknown' || s.state === 'unavailable';
+  // Unquoted on/off in YAML 1.1 dashboards arrive as booleans; map them back to HA state strings.
+  const stateText = v => (v === true ? 'on' : v === false ? 'off' : String(v));
   const text = (el, value) => { const v = String(value ?? ''); if (el.textContent !== v) el.textContent = v; };
   const attr = (el, key, value) => { const v = String(value); if (el.getAttribute(key) !== v) el.setAttribute(key, v); };
   const safePath = p => typeof p === 'string' && p.startsWith('/') && !p.startsWith('//') && !/[\\\s]/.test(p);
@@ -12,14 +14,15 @@
   // Rules are explicit: the card never guesses what "normal" means for a sensor.
   function matches(state, when) {
     if (unusable(state) || !when) return false;
-    if (when.state !== undefined) return state.state === String(when.state);
-    if (when.state_not !== undefined) return state.state !== String(when.state_not);
+    if (when.state !== undefined) return state.state === stateText(when.state);
+    if (when.state_not !== undefined) return state.state !== stateText(when.state_not);
     return false;
   }
+  // Thresholds are inclusive: "above 35" matches 35, "below 20" matches 20.
   function thresholdLevel(state, thresholds) {
     if (unusable(state) || !thresholds) return '';
     const value = Number(state.state);
-    if (state.state.trim?.() === '' || !Number.isFinite(value)) return '';
+    if (state.state.trim() === '' || !Number.isFinite(value)) return '';
     let level = '';
     for (const t of thresholds) {
       const hit = t.direction === 'above' ? value >= t.value : value <= t.value;
@@ -83,11 +86,11 @@
         .tile[data-active] .icon{color:var(--tile-color,var(--primary-color))}
         .main{font-size:19px;font-weight:600;letter-spacing:-.4px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .main small{font-size:13px;font-weight:400;letter-spacing:0;color:var(--secondary-text-color);margin-left:3px}
-        .sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
+        .main small:empty{display:none}.sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
         @container(max-width:360px){.sub{display:none}.tile{padding:8px}}
-        @media(pointer:coarse){.tile,.alert{min-height:64px}.alert{min-height:44px}}
+        @media(pointer:coarse){.tile{min-height:64px}}
         @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-      </style><ha-card><header hidden><h2></h2><span class="badge" hidden></span></header><div class="alerts"></div><div class="grid"></div></ha-card>`;
+      </style><ha-card><header hidden><h2></h2><span class="badge" role="status" hidden></span></header><div class="alerts" aria-live="polite"></div><div class="grid"></div></ha-card>`;
     }
 
     setConfig(config) {
@@ -99,6 +102,7 @@
         if (!alert || typeof alert.entity !== 'string' || !ID.test(alert.entity)) fail('entity가 필요합니다.');
         if (!alert.when) fail('when이 필요합니다.');
         validateRule(alert.when, 'when', fail);
+        if (alert.name !== undefined && typeof alert.name !== 'string') fail('name은 문자열이어야 합니다.');
         if (alert.level !== undefined && !LEVELS[alert.level]) fail('level은 warning 또는 critical이어야 합니다.');
         if (alert.navigation_path !== undefined && !safePath(alert.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
       });
@@ -108,6 +112,7 @@
         if (!TILE_TYPES.includes(tile.type)) fail(`type은 ${TILE_TYPES.join(', ')} 중 하나여야 합니다.`);
         if (typeof tile.name !== 'string' || !tile.name) fail('name이 필요합니다.');
         if (tile.navigation_path !== undefined && !safePath(tile.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
+        for (const key of ['icon', 'idle_text']) if (tile[key] !== undefined && typeof tile[key] !== 'string') fail(`${key}는 문자열이어야 합니다.`);
         if (tile.type === 'count' || tile.type === 'climate') entityList(tile.entities, 'entities', fail);
         if (tile.type === 'climate' && tile.value_entity !== undefined && !ID.test(tile.value_entity)) fail('value_entity가 올바르지 않습니다.');
         if (tile.type === 'value') {
@@ -117,7 +122,11 @@
         }
         if (tile.type === 'status') {
           itemList(tile.items, 'items', fail);
-          tile.items.forEach(item => { if (item.active !== undefined && !Array.isArray(item.active)) fail('items[].active는 목록이어야 합니다.'); });
+          tile.items.forEach(item => {
+            if (item.active !== undefined && !Array.isArray(item.active)) fail('items[].active는 목록이어야 합니다.');
+            if (item.name !== undefined && typeof item.name !== 'string') fail('items[].name은 문자열이어야 합니다.');
+            if (item.remaining !== undefined && !ID.test(item.remaining)) fail('items[].remaining이 올바르지 않습니다.');
+          });
         }
         if (tile.type === 'health') {
           itemList(tile.items, 'items', fail);
@@ -136,7 +145,7 @@
       this._build(); this._render();
     }
     set hass(hass) { this._hass = hass; this._render(); }
-    getCardSize() { return Math.max(1, Math.ceil((this._config?.tiles.length || 1) / 2) * 1 + 1); }
+    getCardSize() { return Math.ceil((this._config?.tiles.length || 1) / 2) + 1 + (this._alertCount || 0) * 0.5; }
     getGridOptions() { return { columns: 12, min_columns: 6 }; }
     static getStubConfig(hass) {
       const light = Object.keys(hass?.states || {}).filter(id => id.startsWith('light.')).slice(0, 3);
@@ -156,31 +165,35 @@
 
     _build() {
       const root = this.shadowRoot;
-      this._alerts = [];
+      this._alertKey = undefined; this._alertCount = 0;
       root.querySelector('.alerts').replaceChildren();
       const grid = root.querySelector('.grid'); grid.replaceChildren(); this._tiles = [];
       const header = root.querySelector('header');
       text(root.querySelector('h2'), this._config.name || '');
       for (const tile of this._config.tiles) {
-        const interactive = Boolean(tile.navigation_path || this._firstEntity(tile));
-        const el = document.createElement(interactive ? 'button' : 'div'); el.className = 'tile';
-        if (interactive) el.onclick = () => this._open(tile.navigation_path, this._firstEntity(tile));
+        const el = document.createElement('button'); el.className = 'tile';
+        const ref = { tile, el };
+        // Tap opens the entity that explains the summary (running appliance, worst item), not just the first one.
+        el.onclick = () => this._open(tile.navigation_path, ref.focus ?? this._firstEntity(tile));
         const head = document.createElement('div'); head.className = 'head';
         const iconWrap = document.createElement('span'); iconWrap.className = 'icon';
-        const icon = document.createElement('ha-icon'); iconWrap.append(icon);
+        const icon = document.createElement('ha-icon'); icon.setAttribute('aria-hidden', 'true'); iconWrap.append(icon);
         const label = document.createElement('span'); label.textContent = tile.name;
         head.append(iconWrap, label);
         const main = document.createElement('div'); main.className = 'main';
+        const mainText = document.createTextNode(''), small = document.createElement('small');
+        main.append(mainText, small);
         const sub = document.createElement('div'); sub.className = 'sub';
         el.append(head, main, sub); grid.append(el);
-        this._tiles.push({ tile, el, icon, main, sub });
+        Object.assign(ref, { icon, mainText, small, sub });
+        this._tiles.push(ref);
       }
       header.hidden = !this._config.name && !(this._config.alerts || []).length;
     }
 
     _format(state) {
       if (unusable(state)) return '확인 불가';
-      return this._hass.formatEntityState?.(state) ?? `${state.state} ${state.attributes.unit_of_measurement || ''}`.trim();
+      return this._hass.formatEntityState?.(state) ?? `${state.state} ${state.attributes?.unit_of_measurement || ''}`.trim();
     }
     _split(state) {
       const formatted = this._format(state), unit = state?.attributes?.unit_of_measurement || '';
@@ -200,24 +213,26 @@
       if (tile.type === 'climate') {
         const all = tile.entities.map(states), usable = all.filter(s => !unusable(s));
         if (!usable.length) return { number: '—', label: '확인 불가', offline: true };
-        const running = usable.filter(s => s.state !== 'off' && (s.attributes.hvac_action === undefined || !['idle', 'off'].includes(s.attributes.hvac_action))).length;
+        const on = usable.filter(s => s.state !== 'off');
+        const running = on.filter(s => !['idle', 'off'].includes(s.attributes?.hvac_action)).length;
         const temp = tile.value_entity ? states(tile.value_entity) : undefined;
         const down = all.length - usable.length;
         return {
-          number: running ? `${running}대` : '꺼짐', label: running ? '가동' : '',
+          number: running ? `${running}대` : on.length ? '대기' : '꺼짐', label: running ? '가동' : '',
           sub: [temp && !unusable(temp) ? this._format(temp) : '', down ? `${down}대 확인 불가` : ''].filter(Boolean).join(' · '), active: running > 0,
         };
       }
       if (tile.type === 'status') {
         const all = tile.items.map(item => ({ item, state: states(item.entity) }));
         if (all.every(r => unusable(r.state))) return { number: '—', label: '확인 불가', offline: true };
-        const active = all.filter(r => !unusable(r.state) && (r.item.active || ['running']).includes(r.state.state));
-        if (!active.length) return { number: tile.idle_text || '모두 대기', sub: all.some(r => unusable(r.state)) ? `${all.filter(r => unusable(r.state)).length}개 확인 불가` : '' };
+        const active = all.filter(r => !unusable(r.state) && (r.item.active || ['running']).map(stateText).includes(r.state.state));
+        const downCount = all.filter(r => unusable(r.state)).length, down = downCount ? `${downCount}개 확인 불가` : '';
+        if (!active.length) return { number: tile.idle_text || '모두 대기', sub: down };
         const first = active[0], remaining = first.item.remaining ? states(first.item.remaining) : undefined;
         const detail = remaining && !unusable(remaining) ? this._format(remaining) : '';
         return {
-          number: active.length > 1 ? `${active.length}대` : (first.item.name || first.state.attributes.friendly_name || first.item.entity), label: active.length > 1 ? '동작 중' : '동작 중',
-          sub: [active.length > 1 ? first.item.name : '', detail].filter(Boolean).join(' · '), active: true,
+          number: active.length > 1 ? `${active.length}대` : (first.item.name || first.state.attributes?.friendly_name || first.item.entity), label: '동작 중',
+          sub: [active.length > 1 ? first.item.name : '', detail, down].filter(Boolean).join(' · '), active: true, focus: first.item.entity,
         };
       }
       if (tile.type === 'value') {
@@ -234,65 +249,72 @@
         let level = '';
         if (item.problem && matches(state, item.problem)) level = item.level || 'critical';
         level = worse(level, thresholdLevel(state, item.thresholds));
-        return { level };
+        return { level, entity: item.entity };
       });
       const down = results.filter(r => r.down).length, known = results.filter(r => !r.down);
       if (!known.length) return { number: '—', label: '확인 불가', offline: true };
       const level = known.reduce((acc, r) => worse(acc, r.level), '');
       const count = known.filter(r => r.level === level).length;
-      const sub = down ? `${down}개 확인 불가` : '';
+      const lower = level === 'critical' ? known.filter(r => r.level === 'warning').length : 0;
+      const sub = [lower ? `주의 ${lower}건` : '', down ? `${down}개 확인 불가` : ''].filter(Boolean).join(' · ');
       if (!level) return { number: '이상 없음', sub };
-      return { number: `${count}건`, label: level === 'critical' ? '위험' : '주의', sub, level };
+      return { number: `${count}건`, sub, level, focus: known.find(r => r.level === level).entity };
     }
 
     _render() {
       if (!this._hass || !this._config) return;
       let unavailableAlerts = 0;
       const hits = [];
-      for (const alert of this._config.alerts || []) {
+      for (const [index, alert] of (this._config.alerts || []).entries()) {
         const state = this._hass.states[alert.entity];
         if (unusable(state)) { unavailableAlerts++; continue; }
-        if (matches(state, alert.when)) hits.push({ alert, state });
+        if (matches(state, alert.when)) hits.push({ alert, state, index });
       }
       hits.sort((a, b) => (LEVELS[b.alert.level || 'warning']) - (LEVELS[a.alert.level || 'warning']));
       this._renderAlerts(hits);
+      const summaries = this._tiles.map(ref => this._summarise(ref.tile));
+      const flagged = hits.length + summaries.filter(s => s.level).length;
       const badge = this.shadowRoot.querySelector('.badge'), header = this.shadowRoot.querySelector('header');
       const hasAlerts = Boolean((this._config.alerts || []).length);
       badge.hidden = !hasAlerts;
-      if (hasAlerts) text(badge, hits.length ? `${hits.length}건 확인 필요` : unavailableAlerts ? `${unavailableAlerts}개 확인 불가` : '✓ 이상 없음');
+      if (hasAlerts) text(badge, [flagged ? `${flagged}건 확인 필요` : '', unavailableAlerts ? `${unavailableAlerts}개 확인 불가` : ''].filter(Boolean).join(' · ') || '✓ 이상 없음');
       header.hidden = !this._config.name && !hasAlerts;
 
-      for (const ref of this._tiles) {
-        const s = this._summarise(ref.tile);
+      for (const [index, ref] of this._tiles.entries()) {
+        const s = summaries[index];
+        ref.focus = s.focus;
         const level = s.level || '';
         attr(ref.el, 'data-level', level);
         if (s.active) attr(ref.el, 'data-active', ''); else ref.el.removeAttribute('data-active');
         if (s.offline) attr(ref.el, 'data-offline', ''); else ref.el.removeAttribute('data-offline');
         const icon = level === 'critical' ? 'mdi:alert-circle' : level === 'warning' ? 'mdi:alert' : (s.offline ? 'mdi:help-circle-outline' : (ref.tile.icon || 'mdi:circle-outline'));
         if (ref.icon.icon !== icon) ref.icon.icon = icon;
-        ref.main.replaceChildren();
         const prefix = level === 'critical' ? '위험 · ' : level === 'warning' ? '주의 · ' : '';
-        ref.main.append(document.createTextNode(prefix + (s.number ?? '')));
-        const small = [s.unit, s.label].filter(Boolean).join(' ');
-        if (small) { const el = document.createElement('small'); el.textContent = small; ref.main.append(el); }
+        const main = prefix + (s.number ?? ''), small = [s.unit, s.label].filter(Boolean).join(' ');
+        if (ref.mainText.data !== main) ref.mainText.data = main;
+        text(ref.small, small);
         text(ref.sub, s.sub || '');
-        const summary = [ref.tile.name, prefix + (s.number ?? ''), small, s.sub].filter(Boolean).join(' ');
+        const summary = [ref.tile.name, main, small, s.sub].filter(Boolean).join(' ');
         attr(ref.el, 'title', summary);
-        if (ref.el.localName === 'button') attr(ref.el, 'aria-label', summary);
+        attr(ref.el, 'aria-label', summary);
       }
     }
 
     _renderAlerts(hits) {
       const box = this.shadowRoot.querySelector('.alerts');
-      const key = hits.map(h => `${h.alert.entity}|${h.alert.level || 'warning'}`).join(',');
+      const named = hits.map(({ alert, index }) => ({
+        alert, level: alert.level || 'warning',
+        name: alert.name || this._hass.states[alert.entity]?.attributes?.friendly_name || alert.entity,
+        index,
+      }));
+      const key = named.map(h => `${h.index}|${h.level}|${h.name}`).join(',');
+      this._alertCount = named.length;
       if (this._alertKey !== key) {
         this._alertKey = key; box.replaceChildren();
-        for (const { alert } of hits) {
-          const level = alert.level || 'warning';
+        for (const { alert, level, name } of named) {
           const btn = document.createElement('button'); btn.className = 'alert'; btn.dataset.level = level;
-          const icon = document.createElement('ha-icon'); icon.icon = level === 'critical' ? 'mdi:alert-circle' : 'mdi:alert';
+          const icon = document.createElement('ha-icon'); icon.icon = level === 'critical' ? 'mdi:alert-circle' : 'mdi:alert'; icon.setAttribute('aria-hidden', 'true');
           const label = document.createElement('span');
-          const name = alert.name || this._hass.states[alert.entity]?.attributes.friendly_name || alert.entity;
           label.textContent = `${level === 'critical' ? '위험' : '주의'} · ${name}`;
           btn.title = label.textContent; btn.setAttribute('aria-label', label.textContent);
           btn.append(icon, label);

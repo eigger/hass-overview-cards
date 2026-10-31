@@ -116,3 +116,88 @@ test('setConfig rejects invalid configs', () => {
     assert.throws(() => setup(config));
   }
 });
+
+function live(config, states) {
+  const { window, card } = setup(config, states);
+  const update = next => { card.hass = { states: { ...states, ...next }, callService: () => {} }; };
+  return { window, card, update };
+}
+
+test('alerts survive setConfig re-calls and follow state and name changes on the same card', () => {
+  const config = { alerts: [
+    { entity: 'sensor.door', name: 'A', when: { state: 'a' }, level: 'warning' },
+    { entity: 'sensor.door', name: 'B', when: { state: 'b' }, level: 'warning' },
+  ], tiles: [{ type: 'count', name: '조명', entities: ['light.a'] }] };
+  const { card, update } = live(config, { 'sensor.door': state('sensor.door', 'a'), 'light.a': state('light.a', 'off') });
+  assert.match(alerts(card)[0].textContent, /A/);
+  update({ 'sensor.door': state('sensor.door', 'b') });
+  assert.equal(alerts(card).length, 1); assert.match(alerts(card)[0].textContent, /B/);
+  card.setConfig({ ...config, tiles: [{ type: 'count', name: '조명2', entities: ['light.a'] }] });
+  assert.equal(alerts(card).length, 1);
+  card.setConfig({ ...config, alerts: [{ ...config.alerts[1], name: 'Renamed' }] });
+  assert.match(alerts(card)[0].textContent, /Renamed/);
+});
+
+test('YAML booleans match on/off states', () => {
+  const { card } = setup({ alerts: [{ entity: 'binary_sensor.x', name: 'x', when: { state: true } }], tiles: [{ type: 'status', name: 's', items: [{ entity: 'switch.y', active: [true] }] }] },
+    { 'binary_sensor.x': state('binary_sensor.x', 'on'), 'switch.y': state('switch.y', 'on') });
+  assert.equal(alerts(card).length, 1);
+  assert.match(tiles(card)[0].querySelector('.main').textContent, /1|switch/);
+  assert.equal(tiles(card)[0].hasAttribute('data-active'), true);
+});
+
+test('thresholds are inclusive, support below, and ignore non-numeric values', () => {
+  const config = { tiles: [{ type: 'value', name: 'v', entity: 'sensor.v', thresholds: [{ value: 35, direction: 'above', level: 'warning' }, { value: 20, direction: 'below', level: 'critical' }] }] };
+  for (const [value, level] of [['35', 'warning'], ['34.9', ''], ['20', 'critical'], ['', ''], ['abc', '']]) {
+    const { card } = setup(config, { 'sensor.v': state('sensor.v', value) });
+    assert.equal(tiles(card)[0].dataset.level, level, value);
+  }
+});
+
+test('climate shows standby for on-but-idle devices and omits off-only as 꺼짐', () => {
+  const config = { tiles: [{ type: 'climate', name: 'c', entities: ['climate.a'] }] };
+  let { card } = setup(config, { 'climate.a': state('climate.a', 'heat', { hvac_action: 'idle' }) });
+  assert.match(tiles(card)[0].querySelector('.main').textContent, /대기/);
+  ({ card } = setup(config, { 'climate.a': state('climate.a', 'off') }));
+  assert.match(tiles(card)[0].querySelector('.main').textContent, /꺼짐/);
+});
+
+test('status reports unavailable items while another is running and taps the running entity', () => {
+  const { card, window } = setup({ tiles: [{ type: 'status', name: '가전', items: [
+    { entity: 'sensor.w', name: '세탁' }, { entity: 'sensor.d', name: '건조' }, { entity: 'sensor.x', name: '식세기' },
+  ] }] }, { 'sensor.w': state('sensor.w', 'idle'), 'sensor.d': state('sensor.d', 'running'), 'sensor.x': state('sensor.x', 'unavailable') });
+  assert.match(tiles(card)[0].querySelector('.sub').textContent, /1개 확인 불가/);
+  let opened; card.addEventListener('hass-more-info', e => { opened = e.detail.entityId; });
+  tiles(card)[0].click();
+  assert.equal(opened, 'sensor.d');
+});
+
+test('health shows lower-level counts, taps the worst item, and the badge counts flagged tiles', () => {
+  const { card } = setup({ name: 'h', alerts: [{ entity: 'sensor.a', when: { state: 'x' } }], tiles: [{ type: 'health', name: '서버', items: [
+    { entity: 'sensor.ok', problem: { state: 'bad' } },
+    { entity: 'sensor.w1', thresholds: [{ value: 1, direction: 'above', level: 'warning' }] },
+    { entity: 'sensor.bad', problem: { state: 'bad' }, level: 'critical' },
+  ] }] }, { 'sensor.a': state('sensor.a', 'y'), 'sensor.ok': state('sensor.ok', 'good'), 'sensor.w1': state('sensor.w1', '5'), 'sensor.bad': state('sensor.bad', 'bad') });
+  assert.match(tiles(card)[0].querySelector('.sub').textContent, /주의 1건/);
+  assert.doesNotMatch(tiles(card)[0].getAttribute('aria-label'), /위험.*위험/);
+  assert.match(card.shadowRoot.querySelector('.badge').textContent, /1건 확인 필요/);
+  let opened; card.addEventListener('hass-more-info', e => { opened = e.detail.entityId; });
+  tiles(card)[0].click();
+  assert.equal(opened, 'sensor.bad');
+});
+
+test('malformed states do not break rendering', () => {
+  const { card } = setup({ tiles: [{ type: 'value', name: 'v', entity: 'sensor.v' }, { type: 'count', name: 'c', entities: ['light.a'] }] },
+    { 'sensor.v': { entity_id: 'sensor.v', state: null }, 'light.a': { entity_id: 'light.a', state: 'on' } });
+  assert.match(tiles(card)[0].querySelector('.main').textContent, /—/);
+  assert.match(tiles(card)[1].querySelector('.main').textContent, /1\/1/);
+});
+
+test('alert clicks navigate or open more-info and unsafe alert paths are rejected', () => {
+  assert.throws(() => setup({ alerts: [{ entity: 'lock.g', when: { state: 'unlocked' }, navigation_path: '//evil' }], tiles: [{ type: 'count', name: 'x', entities: ['light.a'] }] }), /navigation_path/);
+  const { card } = setup({ alerts: [{ entity: 'lock.g', when: { state: 'unlocked' } }], tiles: [{ type: 'count', name: 'x', entities: ['light.a'] }] },
+    { 'lock.g': state('lock.g', 'unlocked'), 'light.a': state('light.a', 'on') });
+  let opened; card.addEventListener('hass-more-info', e => { opened = e.detail.entityId; });
+  alerts(card)[0].click();
+  assert.equal(opened, 'lock.g');
+});

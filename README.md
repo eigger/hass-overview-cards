@@ -1,78 +1,91 @@
 # Overview Cards
 
-Home Assistant 오버뷰용 요약 카드. 방/기기 상세는 하위 뷰에 맡기고, 홈 화면에서는 **카테고리별 한 줄 요약**과 **확인이 필요한 알림**만 보여줍니다.
+**English** | [한국어](README.ko.md)
 
-`custom:compact-overview-card` · 단일 JS 파일, 빌드/외부 라이브러리 없음 · 상태 읽기 전용(서비스 호출 없음)
+Summary cards for a Home Assistant overview page. Details stay in room and device views; the overview shows **one-line summaries per category** and **alerts that need attention**.
 
-## 설치
+`custom:compact-overview-card` · one JavaScript file, no build step or runtime dependencies · read-only (never calls services)
 
-`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 JavaScript 모듈로 등록합니다 (`/local/compact-overview-card.js`). HACS 사용 시 Custom repositories에 이 저장소를 **Dashboard**로 추가합니다.
+## Installation
 
-## 예제
+Install through HACS **Custom repositories** (category **Dashboard**), or copy `compact-overview-card.js` to `/config/www/` and register `/local/compact-overview-card.js` as a JavaScript module in dashboard resources. This project is not in the default HACS catalog.
+
+It uses `color-mix` and container queries, so it needs a recent Home Assistant frontend.
+
+## Example
 
 ```yaml
 type: custom:compact-overview-card
-name: 우리집
+name: Home
 columns: auto            # auto | 2 | 3 | 4
-alerts:                  # 조건이 맞을 때만 표시, 없으면 높이 0
+alerts:                  # shown only while the condition matches; zero height otherwise
   - entity: binary_sensor.kitchen_leak
-    name: 누수 · 주방
+    name: Kitchen leak
     when: { state: "on" }
-    level: critical      # warning(기본) | critical
+    level: critical      # warning (default) | critical
     navigation_path: /lovelace/rooms
 tiles:
   - type: count
-    name: 조명
+    name: Lights
     icon: mdi:lightbulb-group
     entities: [light.living, light.bedroom, switch.kitchen]
     navigation_path: /lovelace/rooms
   - type: climate
-    name: 냉난방
+    name: Climate
     icon: mdi:thermostat
     entities: [climate.living_heater, climate.living_ac]
     value_entity: sensor.living_temperature
   - type: status
-    name: 가전
+    name: Appliances
     icon: mdi:washing-machine
-    idle_text: 모두 대기
+    idle_text: All idle
     items:
-      - { entity: sensor.washer_state, name: 세탁, active: [running], remaining: sensor.washer_remaining }
+      - { entity: sensor.washer_state, name: Washer, active: [running], remaining: sensor.washer_remaining }
   - type: value
-    name: 공기
+    name: Air
     icon: mdi:air-filter
     entity: sensor.pm2_5
     thresholds:
       - { value: 35, direction: above, level: warning }
       - { value: 75, direction: above, level: critical }
   - type: health
-    name: 서버
+    name: Server
     icon: mdi:server
     items:
       - { entity: sensor.ssd_smart, problem: { state_not: PASSED }, level: critical }
       - { entity: sensor.cpu_temp, thresholds: [{ value: 75, direction: above, level: warning }] }
 ```
 
-## 타일 유형
+## Tile types
 
-| type | 필수 | 표시 |
+| type | Required | Shows |
 | --- | --- | --- |
-| `count` | `entities` | `켜진 수/확인 가능한 수` |
-| `climate` | `entities` (선택 `value_entity`) | `N대 가동` + 대표 온도 |
-| `status` | `items[]` (`entity`, 선택 `name`/`active`/`remaining`) | 동작 중인 항목과 남은 시간, 없으면 `idle_text` |
-| `value` | `entity` (선택 `secondary_entity`, `thresholds`) | 값 + 단위, 임계값 수준 |
-| `health` | `items[]` (`problem` 또는 `thresholds` 필수) | 최악 수준의 건수, 없으면 `이상 없음` |
+| `count` | `entities` | `on / available` |
+| `climate` | `entities` (optional `value_entity`) | `N running`, or standby / off, plus a representative reading |
+| `status` | `items[]` (`entity`; optional `name`, `active`, `remaining`) | Running items and remaining time, otherwise `idle_text`. `active` defaults to `[running]` |
+| `value` | `entity` (optional `secondary_entity`, `thresholds`) | Value, unit and threshold level |
+| `health` | `items[]` (`problem` or `thresholds` required; optional `level`) | Count at the worst level plus lower-level count, otherwise "no issues". `level` applies to `problem` only and defaults to `critical` |
 
-공통: `name`(필수), `icon`, `navigation_path`(없으면 대표 엔티티 상세 정보).
+Common options: `name` (required), `icon`, `navigation_path`.
 
-## 원칙
+## Rules
 
-- 정상/위험 기준은 카드가 추측하지 않습니다. `thresholds`, `problem`, `alerts.when`에 사용자가 쓴 규칙만 적용합니다.
-- 상태는 색 + `주의 ·`/`위험 ·` 문구 + 아이콘 변화로 함께 전달합니다.
-- 일부 엔티티가 `unavailable`이면 분모에서 빼고 `N개 확인 불가`로 따로 표시하며, 정상으로 간주하지 않습니다.
-- 타일 순서는 설정 순서를 유지하고 상태에 따라 재배치하지 않습니다.
-- 알림이 없으면 알림 영역은 높이를 차지하지 않고, 제목 옆에 `✓ 이상 없음` 배지만 표시합니다.
+- `count` counts only the `on` state (not `open` covers, locks and so on).
+- Thresholds are inclusive: `above 35` matches 35, `below 20` matches 20. Non-numeric values are ignored.
+- Alert `level` defaults to `warning`.
+- When `secondary_entity` is unavailable, the secondary line is hidden.
+- In YAML-mode dashboards an unquoted `on`/`off` is read as a boolean. The card maps it back, but quoting is recommended.
+- Tapping a tile follows `navigation_path`; without one it opens the entity that explains the summary (the running item or the worst item).
 
-## 개발
+## Principles
+
+- The card never guesses what is normal. Only your `thresholds`, `problem` and `when` rules apply.
+- Status is conveyed by color, a `주의 ·` / `위험 ·` text prefix and an icon change together.
+- Unavailable entities are counted separately, never treated as healthy.
+- Tile order follows your configuration and never reshuffles with state.
+- With no alerts the alert area takes no height; only a `✓ 이상 없음` badge remains beside the title.
+
+## Development
 
 ```bash
 npm install
