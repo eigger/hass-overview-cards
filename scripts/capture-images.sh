@@ -19,10 +19,10 @@ mobile() { # name url-path (loaded in a 390px iframe: headless Chrome will not r
 }
 for lang in en ko; do
   suffix=""; q=""; [ "$lang" = ko ] && suffix="-ko" && q="&lang=ko"
-  shot "overview-card$suffix" 1136,740 "$BASE/preview.html?scenario=alert&width=1120&capture=true$q"
-  shot "overview-card-clear$suffix" 1136,680 "$BASE/preview.html?scenario=normal&width=1120&capture=true$q"
-  shot "overview-card-dark$suffix" 1136,740 "$BASE/preview.html?scenario=alert&width=1120&theme=dark&capture=true$q"
-  mobile "overview-card-mobile$suffix" "preview.html?scenario=alert&width=390&capture=true$q" 1650
+  shot "overview-card$suffix" 1516,710 "$BASE/preview.html?scenario=alert&width=1500&capture=true$q"
+  shot "overview-card-clear$suffix" 1516,640 "$BASE/preview.html?scenario=normal&width=1500&capture=true$q"
+  shot "overview-card-dark$suffix" 1516,710 "$BASE/preview.html?scenario=alert&width=1500&theme=dark&capture=true$q"
+  mobile "overview-card-mobile$suffix" "preview.html?scenario=alert&width=390&capture=true$q" 1700
   shot "overview-tiles$suffix" 422,432 "$BASE/preview.html?variant=tiles&scenario=alert&capture=true$q"
   shot "overview-tiles-clear$suffix" 422,336 "$BASE/preview.html?variant=tiles&scenario=normal&capture=true$q"
   shot "overview-tiles-offline$suffix" 422,336 "$BASE/preview.html?variant=tiles&scenario=offline&capture=true$q"

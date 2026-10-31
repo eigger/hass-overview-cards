@@ -4,7 +4,7 @@
 :root{font-family:system-ui,sans-serif;color-scheme:light;--primary-color:#008bba;--primary-text-color:#263238;--secondary-text-color:#66747c;--divider-color:#e3e7e9;--disabled-color:#a5afb5;--card-background-color:#fff;--warning-color:#ffa600;--error-color:#db4437}
 body{background:#f2f5f6;margin:24px}body.dark{color-scheme:dark;--primary-text-color:#e6edef;--secondary-text-color:#9caeb6;--divider-color:#35434a;--disabled-color:#66767e;--card-background-color:#202b30;background:#12181b}
 h1{font-size:20px;margin:0 0 8px}p{font-size:13px;color:var(--secondary-text-color)}nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}nav select,nav button{font:inherit;padding:8px;border:1px solid var(--divider-color);border-radius:8px;background:var(--card-background-color);color:var(--primary-text-color)}
-main{width:390px;max-width:100%}main.wide{width:1120px}body.capture{margin:8px}body.capture>h1,body.capture>p,body.capture>nav{display:none}
+main{width:390px;max-width:100%}main.wide{width:1500px}body.capture{margin:8px}body.capture>h1,body.capture>p,body.capture>nav{display:none}
 .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#263238;color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;opacity:0;pointer-events:none}.toast.show{opacity:1}
 </style>
 <h1>Overview Cards</h1><p>모의 상태를 사용한 브라우저 미리보기 · 실제 기기에 명령을 보내지 않습니다.</p>
@@ -23,7 +23,7 @@ customElements.define('ha-icon',class extends HTMLElement{
 const params=new URLSearchParams(location.search),{translate}=compactPreviewLocale,{states,sectionsConfig,tilesConfig,scenarios,format}=overviewPreview;
 const config=params.get('variant')==='tiles'?tilesConfig:sectionsConfig;
 const toast=document.querySelector('.toast'),main=document.querySelector('main');
-if(['320','390','760','1120'].includes(params.get('width'))){main.style.width=params.get('width')+'px';document.querySelector('select').value=params.get('width');}
+if(['320','390','760','1120','1500'].includes(params.get('width'))){main.style.width=params.get('width')+'px';document.querySelector('select').value=params.get('width');}
 if(params.get('theme')==='dark')document.body.classList.add('dark');
 if(params.get('capture')==='true')document.body.classList.add('capture');
 const scenario=params.get('scenario')||'normal',initial=states();(scenarios[scenario]||scenarios.normal)(initial);

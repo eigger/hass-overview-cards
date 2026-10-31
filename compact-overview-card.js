@@ -132,24 +132,24 @@
         .tile[data-offline]{opacity:.6}
         .head{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--secondary-text-color);min-width:0}
         .head span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        ha-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none}
+        ha-icon,ha-state-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none}
+        .chip-icon ha-state-icon{--mdc-icon-size:20px;width:20px;height:20px}
         .icon{display:inline-flex;color:var(--secondary-text-color)}
         .tile[data-active] .icon{color:var(--tile-color,var(--primary-color))}
         .main{font-size:19px;font-weight:600;letter-spacing:-.4px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .main small{font-size:13px;font-weight:400;letter-spacing:0;color:var(--secondary-text-color);margin-left:3px}
         .main small:empty{display:none}.sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
         @container(max-width:360px){.sub{display:none}.tile{padding:8px}}
-        /* Groups fill equal-width columns of at least 460px from top to bottom in the configured order (like a newspaper), and the browser balances the column heights, so there are no gaps and cards keep their natural height. */
-        .sections{display:block;column-width:460px;column-gap:12px;margin-top:12px}.sections:empty{display:none;margin:0}
+        /* Groups sit in equal-width grid columns. _layout() puts each group, in configured order, into the currently shortest column and gives it a 1px-row span, so columns have equal widths, aligned tops, balanced heights and no gaps. Before that runs (or on mobile) it is a plain one-column grid. */
+        .sections{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:12px;align-items:start;margin-top:12px}.sections:empty{display:none;margin:0}
+        :host([data-masonry]) .sections{grid-auto-rows:1px;row-gap:0;margin-bottom:-12px}
         :host([data-bare]) .sections{margin-top:0}
-        :host([section-columns="1"]) .sections{column-count:1;column-width:auto}
-        :host([section-columns="2"]) .sections{column-count:2;column-width:auto}
-        :host([section-columns="3"]) .sections{column-count:3;column-width:auto}
-        @container(max-width:639px){:host([section-columns="2"]) .sections,:host([section-columns="3"]) .sections{column-count:1}}
-        ha-card.section{display:block;overflow:hidden;box-shadow:none;break-inside:avoid;margin:0 0 12px}
+        ha-card.section{display:block;min-width:0;overflow:hidden;box-shadow:none;margin:0}
         .sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;padding:4px 12px 0}
-        .sec-title{display:flex;align-items:center;gap:8px;flex:1 1 96px;min-width:96px;padding:4px;border:0;border-radius:6px;background:transparent;text-align:left;font:inherit;font-size:14px;font-weight:600;color:var(--primary-text-color)}
-        div.sec-title{cursor:default}
+        .sec-head .sec-sum{margin-left:auto}
+        .sec-title{display:flex;align-items:center;gap:8px;flex:1 1 96px;min-width:96px;min-height:44px;padding:4px 6px;margin-left:-6px;border:0;border-radius:8px;background:transparent;text-align:left;font:inherit;font-size:14px;font-weight:600;color:var(--primary-text-color)}
+        button.sec-title{cursor:pointer;touch-action:manipulation}button.sec-title:hover{background:var(--compact-control-surface)}button.sec-title:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
+        .sec-title .chevron{margin-left:auto;color:var(--secondary-text-color);opacity:.7}
         .sec-title span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .sec-title ha-icon{color:var(--secondary-text-color)}
         .sec-sum{font-size:15px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;font-variant-numeric:tabular-nums}.sec-sum:empty{display:none}.sec-sum[data-active]{color:var(--primary-color)}.sec-sum[data-offline]{color:var(--secondary-text-color);font-weight:400}
@@ -193,6 +193,7 @@
       if (!Array.isArray(tilesIn) || !Array.isArray(sectionsIn) || !(tilesIn.length || sectionsIn.length)) throw new Error('tiles 또는 sections 목록이 필요합니다.');
       if (config.columns !== undefined && !['auto', 2, 3, 4].includes(config.columns)) throw new Error('columns는 auto, 2, 3, 4 중 하나여야 합니다.');
       if (config.section_columns !== undefined && !['auto', 1, 2, 3].includes(config.section_columns)) throw new Error('section_columns는 auto, 1, 2, 3 중 하나여야 합니다.');
+      if (config.min_column_width !== undefined && !(Number.isFinite(config.min_column_width) && config.min_column_width >= 280 && config.min_column_width <= 900)) throw new Error('min_column_width는 280~900 사이의 숫자여야 합니다.');
       if (config.alerts !== undefined && !Array.isArray(config.alerts)) throw new Error('alerts는 목록이어야 합니다.');
       (config.alerts || []).forEach((alert, i) => {
         const fail = m => { throw new Error(`alerts[${i}]: ${m}`); };
@@ -210,6 +211,7 @@
         if (section.icon !== undefined && typeof section.icon !== 'string') fail('icon은 문자열이어야 합니다.');
         if (section.navigation_path !== undefined && !safePath(section.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
         if (section.columns !== undefined && !['auto', 1, 2].includes(section.columns)) fail('columns는 auto, 1, 2 중 하나여야 합니다.');
+        if (section.column !== undefined && ![1, 2, 3].includes(section.column)) fail('column은 1, 2, 3 중 하나여야 합니다.');
         const hasItems = section.items !== undefined, hasControls = section.controls !== undefined;
         if (!hasItems && !hasControls) fail('controls 또는 items가 필요합니다.');
         if (hasItems && (!Array.isArray(section.items) || !section.items.length || section.items.some(item => !item || typeof item !== 'object' || Array.isArray(item)))) fail('items에는 compact-home-panel 항목 목록이 필요합니다.');
@@ -232,9 +234,60 @@
       if (this._configKey === key) return;
       this._configKey = key; this._config = config;
       this.setAttribute('columns', config.columns ?? 'auto');
-      this.setAttribute('section-columns', config.section_columns ?? 'auto');
       this.toggleAttribute('data-bare', !tilesIn.length);
       this._build(); this._render();
+    }
+    connectedCallback() {
+      if (typeof ResizeObserver === 'function' && !this._resize) this._resize = new ResizeObserver(() => this._queueLayout());
+      this._observeAll(); this._queueLayout();
+    }
+    disconnectedCallback() {
+      this._resize?.disconnect(); cancelAnimationFrame(this._raf); this._raf = 0;
+      for (const ref of this._sections) for (const chip of ref.chips) clearTimeout(chip.stepTimer);
+    }
+    _observeAll() {
+      if (!this._resize || !this.isConnected) return;
+      this._resize.disconnect();
+      this._resize.observe(this.shadowRoot.querySelector('.sections'));
+      for (const ref of this._sections) this._resize.observe(ref.card);
+    }
+    _queueLayout() { if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; this._layout(); }); }
+
+    // Orders groups into the shortest column each time, so tops never go back up the configured order. Equal column widths mean a group's height does not depend on its column, so there is no feedback loop.
+    static assignColumns(heights, columns, pins = [], gap = 12) {
+      const tops = Array(columns).fill(0);
+      return heights.map((height, index) => {
+        let column = 0;
+        for (let k = 1; k < columns; k++) if (tops[k] < tops[column] - 1) column = k;
+        if (pins[index]) column = Math.min(pins[index], columns) - 1;
+        tops[column] += height + gap;
+        return column;
+      });
+    }
+    _layout() {
+      const box = this.shadowRoot.querySelector('.sections'), width = box.clientWidth;
+      if (!width || !this._config) return;
+      const GAP = 12, min = this._config.min_column_width ?? 460, wanted = this._config.section_columns ?? 'auto';
+      const fit = Math.max(1, Math.floor((width + GAP) / (min + GAP)));
+      const columns = wanted === 'auto' ? Math.min(fit, 3) : (width < 640 ? 1 : wanted);
+      compactSet(box.style, '--cols', String(columns));
+      const cards = this._sections.map(ref => ref.card);
+      if (columns === 1 || !cards.length) {
+        this.removeAttribute('data-masonry'); this._layoutKey = '';
+        for (const card of cards) { card.style.gridColumn = ''; card.style.gridRow = ''; }
+        return;
+      }
+      const heights = cards.map(card => Math.ceil(card.getBoundingClientRect().height));
+      if (heights.some(h => !h)) return;
+      // Keep the previous assignment unless the column count or a height changed noticeably, so groups do not jump between columns.
+      const stable = this._assigned && this._assigned.columns === columns && this._assigned.heights.length === heights.length
+        && heights.every((h, i) => Math.abs(h - this._assigned.heights[i]) < 8);
+      if (!stable) this._assigned = { columns, heights, placement: CompactOverviewCard.assignColumns(heights, columns, this._sections.map(ref => ref.section.column), GAP) };
+      cards.forEach((card, i) => {
+        card.style.gridColumn = String(this._assigned.placement[i] + 1);
+        card.style.gridRow = `span ${heights[i] + GAP}`;
+      });
+      this.setAttribute('data-masonry', '');
     }
     set hass(hass) { this._hass = hass; this._render(); }
     getCardSize() {
@@ -284,8 +337,9 @@
         Object.assign(ref, { icon, mainText, small, sub });
         this._tiles.push(ref);
       }
-      header.hidden = !this._config.name && !(this._config.alerts || []).length;
+      header.hidden = !this._config.name;
       this._buildSections();
+      this._assigned = null; this._observeAll(); this._queueLayout();
     }
 
     // ---- quick-control chips -------------------------------------------------------------
@@ -341,14 +395,14 @@
       if (ref.icon.hass !== this._hass) ref.icon.hass = this._hass;
       if (ref.icon.stateObj !== state) ref.icon.stateObj = state;
       const iconName = control.icon || (!state ? 'mdi:help-circle-outline' : undefined);
-      if (iconName && ref.icon.icon !== iconName) ref.icon.icon = iconName;
+      if (ref.icon.icon !== iconName) ref.icon.icon = iconName;
       let line = this._format(state);
       if (kind === 'climate' && !offline) {
         const current = state.attributes?.current_temperature, target = ref.pendingTarget ?? state.attributes?.temperature;
         line = [this._format(state), current !== undefined ? `${current}°` : ''].filter(Boolean).join(' · ');
         text(ref.target, target !== undefined && target !== null ? `${target}°` : '—');
         const range = this._range(state), has = typeof target === 'number';
-        for (const [button, delta] of [[ref.minus, -1], [ref.plus, 1]]) attr(button, 'aria-disabled', !has || (delta < 0 ? target <= range.min : target >= range.max));
+        for (const [button, delta] of [[ref.minus, -1], [ref.plus, 1]]) attr(button, 'aria-disabled', !has || state.state === 'off' || (delta < 0 ? target <= range.min : target >= range.max));
         attr(ref.power, 'aria-disabled', false);
         attr(ref.power, 'aria-pressed', state.state !== 'off');
       } else if (kind === 'climate') {
@@ -431,14 +485,16 @@
         const icon = document.createElement('ha-icon'); icon.setAttribute('aria-hidden', 'true'); icon.icon = section.icon || 'mdi:circle-outline';
         const name = document.createElement('span'); name.textContent = section.name;
         title.append(icon, name);
-        const sum = document.createElement('span'); sum.className = 'sec-sum';
-        head.append(title, sum);
+        if (section.navigation_path) { const chevron = document.createElement('ha-icon'); chevron.className = 'chevron'; chevron.setAttribute('aria-hidden', 'true'); chevron.icon = 'mdi:chevron-right'; title.append(chevron); }
+        head.append(title);
+        // Header order: title, optional readings, then the summary pinned to the right so every group lines up.
         const badges = (section.badges || []).map(badge => {
           const button = document.createElement('button'); button.className = 'pill';
           const label = document.createElement('small'), value = document.createElement('span');
           button.append(label, value); button.onclick = () => this._more(badge.entity); head.append(button);
           return { badge, label, value, button };
         });
+        const sum = document.createElement('span'); sum.className = 'sec-sum'; head.append(sum);
         const controls = document.createElement('div'); controls.className = 'controls';
         const chips = (section.controls || []).map(control => this._makeControl(control, controls));
         const body = document.createElement('div'); body.className = 'sec-body';
@@ -574,7 +630,7 @@
       const hasAlerts = Boolean((this._config.alerts || []).length);
       badge.hidden = !hasAlerts;
       if (hasAlerts) text(badge, [flagged ? `${flagged}건 확인 필요` : '', unavailableAlerts ? `${unavailableAlerts}개 확인 불가` : ''].filter(Boolean).join(' · ') || '✓ 이상 없음');
-      header.hidden = !this._config.name && !hasAlerts;
+      header.hidden = !this._config.name;
 
       this._renderSections(sectionSummaries);
       for (const [index, ref] of this._tiles.entries()) {

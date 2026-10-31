@@ -327,3 +327,35 @@ test('control validation rejects bad entries and sections may use controls witho
   assert.throws(() => controlled({ sections: [{ name: 'x' }] }, {}), /controls 또는 items/);
   assert.doesNotThrow(() => controlled({ sections: [{ name: 'x', controls: [{ entity: 'light.a' }] }] }, {}));
 });
+
+test('assignColumns places groups in order into the shortest column and honours pins', () => {
+  const Card = (() => { const window = new Window({ url: 'http://localhost/' }); window.eval(source); return window.customElements.get('compact-overview-card'); })();
+  // Heights from a real dashboard: lights, climate, air, appliances, life, energy, server.
+  const heights = [230, 258, 140, 164, 258, 110, 150];
+  const placement = Card.assignColumns(heights, 3, []);
+  assert.deepEqual(Array.from(placement.slice(0, 3)), [0, 1, 2]);
+  // Tops never decrease along the configured order.
+  const tops = [0, 0, 0], seen = [];
+  placement.forEach((column, i) => { seen.push(tops[column]); tops[column] += heights[i] + 12; });
+  assert.ok(seen.every((top, i) => i === 0 || top >= Math.min(...seen.slice(0, i)) ));
+  assert.deepEqual(Array.from(Card.assignColumns([100, 100, 100, 100], 2, [])), [0, 1, 0, 1]);
+  assert.deepEqual(Array.from(Card.assignColumns([100, 300, 100], 2, [2, 0, 0])), [1, 0, 1]);
+  assert.deepEqual(Array.from(Card.assignColumns([100, 100], 1, [3, 3])), [0, 0]);
+});
+
+test('top header only appears with a name, title buttons show a chevron, and column options are validated', () => {
+  const noName = sectioned({ alerts: [{ entity: 'lock.a', when: { state: 'unlocked' } }], sections: [{ name: 'x', navigation_path: '/lovelace/a', items: [{ entity: 'light.a' }] }] }, { 'lock.a': state('lock.a', 'unlocked') });
+  assert.equal(noName.card.shadowRoot.querySelector('header').hidden, true);
+  assert.ok(noName.card.shadowRoot.querySelector('.sec-title .chevron'));
+  const named = sectioned({ name: '집', alerts: [{ entity: 'lock.a', when: { state: 'unlocked' } }], sections: [{ name: 'x', items: [{ entity: 'light.a' }] }] }, { 'lock.a': state('lock.a', 'unlocked') });
+  assert.equal(named.card.shadowRoot.querySelector('header').hidden, false);
+  assert.equal(named.card.shadowRoot.querySelector('.sec-title .chevron'), null);
+  for (const config of [{ min_column_width: 100 }, { min_column_width: 'a' }]) assert.throws(() => sectioned({ ...config, sections: [{ name: 'x', items: [{ entity: 'light.a' }] }] }), /min_column_width/);
+  assert.throws(() => sectioned({ sections: [{ name: 'x', column: 4, items: [{ entity: 'light.a' }] }] }), /column/);
+});
+
+test('header summary is the last element of a group header, after title and readings', () => {
+  const { card } = sectioned({ sections: [{ name: 'x', badges: [{ entity: 'sensor.t' }], summary: { type: 'count', entities: ['light.a'] }, items: [{ entity: 'light.a' }] }] }, { 'light.a': state('light.a', 'on'), 'sensor.t': state('sensor.t', '1') });
+  const kinds = [...card.shadowRoot.querySelector('.sec-head').children].map(el => el.className.split(' ')[0]);
+  assert.deepEqual(kinds, ['sec-title', 'pill', 'sec-sum']);
+});

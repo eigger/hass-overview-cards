@@ -15,7 +15,7 @@ Scope and applicability: [STANDARDS.md](STANDARDS.md). This is a card-specific r
 | --- | --- | --- |
 | PASS | Reproducible development install | `npm install` with the committed lockfile; CI uses `npm ci`. |
 | PASS | JavaScript syntax | `npm run check`. |
-| PASS | Card regression suite | `npm test`: 27 passed, 0 failed. Tile summaries, thresholds, unavailable handling, alert lifecycle, YAML booleans, navigation, config validation, groups with embedded `compact-home-panel`, and quick-control chips (toggle, debounced climate steps with clamping, power, confirmation, offline handling). |
+| PASS | Card regression suite | `npm test`: 30 passed, 0 failed. Tile summaries, thresholds, unavailable handling, alert lifecycle, YAML booleans, navigation, config validation, groups with embedded `compact-home-panel`, and quick-control chips (toggle, debounced climate steps with clamping, power, confirmation, offline handling). |
 | PASS | GitHub CI | `Check` succeeded on Ubuntu/Node.js 22 for commits `c6fab62` ([run 41190794025](https://github.com/eigger/hass-overview-cards/actions/runs/41190794025)) and `a722f36` ([run 41191179038](https://github.com/eigger/hass-overview-cards/actions/runs/41191179038)). |
 | PASS | Repository settings | API read-back after configuration: public, squash/rebase merge, auto-merge, branch deletion, read-only default workflow permissions, strict `test` requirement, linear history, no force push or deletion. |
 | PASS | Independent review | A separate Opus review of the card, tests, README and workflows found one high and several medium/low issues. They were fixed and covered by tests in commit `a722f36`; unverified items below remain open. |
@@ -23,6 +23,7 @@ Scope and applicability: [STANDARDS.md](STANDARDS.md). This is a card-specific r
 | PASS | Release workflow | Tag `v0.1.0` passed the release job ([run 41192520436](https://github.com/eigger/hass-overview-cards/actions/runs/41192520436)) and published `compact-overview-card.js`. `v0.2.0` follows the same path; see the release page. |
 | TODO | Dependabot auto-merge path | The pinned reusable workflow has not yet processed a Dependabot PR in this repository. |
 | TODO | HACS installation and live rendering | No connected HA installation was used. DOM tests and mocked previews do not verify HA compatibility, theme variables or actual devices. |
+| PASS | Layout in two engines | Group placement (aligned tops, equal widths, configured order, no gaps, one column at 390px) was measured with real Compact Cards rows in Chromium and WebKit; both gave identical positions at 1500px, 1120px and 390px. Home Assistant itself was not used. |
 | TODO | Minimum Home Assistant version | The card uses `color-mix` and container queries; no minimum version is declared or verified. |
 | N/A | Integration-only checks | No Python integration, domain, manifest, BLE/payload library or integration ZIP. Central integration checker, Hassfest and HA Python fixtures do not apply. |
 

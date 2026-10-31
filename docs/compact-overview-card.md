@@ -59,12 +59,13 @@ sections:
 | `controls` | 예* | — | 빠른 조작 칩 목록 |
 | `items` | 예* | — | 칩 아래에 표시할 `compact-home-panel` 행([해당 카드](https://github.com/eigger/hass-compact-cards/blob/main/docs/compact-home-panel.md)와 동일, Compact Cards 필요). `*` 둘 중 하나 이상 |
 | `icon` | 아니요 | `mdi:circle-outline` | 제목 아이콘 |
-| `navigation_path` | 아니요 | 없음 | `/`로 시작하는 로컬 경로 |
+| `navigation_path` | 아니요 | 없음 | `/`로 시작하는 로컬 경로. 있으면 제목에 `>`가 붙고 눌러서 이동 |
+| `column` | 아니요 | 자동 | `1`, `2`, `3`. 그룹을 특정 열에 고정 |
 | `columns` | 아니요 | `auto` | `items`의 열 수 `auto`, `1`, `2` |
 | `summary` | 아니요 | 없음 | `name` 없는 타일 사양. 헤더에 `3/8 켜짐`, `주의 · 48 µg/m³` 형태로 표시 |
 | `badges` | 아니요 | 없음 | `[{entity, name}]`. 헤더의 센서 값. 누르면 상세 정보 |
 
-그룹은 설정한 순서대로 폭이 같은 열에 위에서 아래로(첫 열부터 차례로) 채우고 열 높이는 자동으로 균형을 맞춥니다. 카드 사이에 빈틈이 없고, 열 폭은 최소 460px라 compact 냉난방 행이 한 줄에 들어가며, 모바일에서는 1열입니다.
+그룹은 설정 순서대로, 그때그때 가장 짧은 열에 배치됩니다. 첫 줄은 1·2·3번 그룹이고 위에서 아래로 훑으면 설정 순서를 따릅니다. 열 상단이 맞고 폭이 같으며 카드 사이에 빈틈이 없습니다(열 하단은 조금 다를 수 있음). 열 최소 폭은 460px라 compact 냉난방 행이 한 줄에 들어가며, 640px 미만에서는 1열입니다. `column: 1|2|3`으로 그룹을 열에 고정할 수 있습니다.
 
 ## 빠른 조작 칩
 
@@ -88,7 +89,8 @@ sections:
 | `tiles` | 예* | — | 조작 없는 요약 타일 목록. `*` `sections`와 `tiles` 중 하나 이상 필요 |
 | `name` | 아니요 | 없음 | 카드 제목 |
 | `columns` | 아니요 | `auto` | 타일 열 수 `auto`, `2`, `3`, `4`. `auto`는 카드 너비 421px부터 3열, 700px부터 4열 |
-| `section_columns` | 아니요 | `auto` | 그룹 열 수 `auto`, `1`, `2`, `3`. `auto`는 폭 460px 이상 그룹을 가로로 채움. PC에서 전체 폭을 쓰려면 이 카드가 있는 섹션에 `column_span`을 지정 |
+| `section_columns` | 아니요 | `auto` | 그룹 열 수 `auto`, `1`, `2`, `3` |
+| `min_column_width` | 아니요 | `460` | 열 최소 폭(280~900). `auto`는 들어가는 만큼(최대 3열) 사용 |
 | `alerts` | 아니요 | 없음 | 조건이 맞을 때만 표시하는 알림 목록 |
 
 ## 요약 타일 유형 (`tiles`와 그룹의 `summary`)

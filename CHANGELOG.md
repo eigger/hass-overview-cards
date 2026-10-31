@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.4.0 — 2026-10-31
+
+- Replace the CSS multi-column layout with ordered shortest-column placement: groups follow the configured order, tops are aligned, columns have equal widths and there are no gaps. Fixes the third column starting 12px lower in WebKit (Home Assistant app, Safari) and very uneven column heights. Verified identical in Chromium and WebKit. Add `min_column_width` and per-group `column`.
+- Top header is shown only when the card has a `name` (it no longer shows a lone badge). Group headers now keep the summary at the far right, after the title and readings, and the title button is at least 44px high with a chevron when it navigates.
+- Chips: `ha-state-icon` sizing, stale fallback icon, −/+ disabled while a climate entity is off, step timers cleaned up on disconnect.
+
 ## 0.3.4 — 2026-10-31
 
 - Fill groups into equal-width columns top to bottom in the configured order (balanced heights, no gaps between or below cards), replacing the row-by-row grid that left blank space under short groups. The optional `span` is removed.

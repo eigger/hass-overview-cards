@@ -71,11 +71,12 @@ Prefer a controls-free summary grid? Use `tiles` instead of `sections`; see [the
 | `name` | yes | Group title. With `navigation_path` the title is a button that opens that local path |
 | `controls` | yes* | Quick-control chips (below) |
 | `items` | yes* | Optional `compact-home-panel` rows shown under the chips (needs Compact Cards). `*` at least one of `controls`/`items` |
-| `icon`, `navigation_path` | no | Title icon and local path |
+| `icon`, `navigation_path` | no | Title icon and local path. With a path the title shows a chevron and opens that tab |
+| `column` | no | `1`, `2` or `3`: pin the group to a column (ignored when fewer columns are shown) |
 | `summary` | no | A tile spec without `name` (`count`, `climate`, `status`, `value`, `health`); shown bold in the header, coloured by level |
 | `badges` | no | `[{ entity, name }]` readings next to the summary; tap opens the entity |
 
-Top-level `section_columns` (`auto`, `1`, `2`, `3`) sets the group columns. `auto` fills the width with groups at least 460px wide, from top to bottom in the configured order in equal-width columns of at least 460px (newspaper style: the first columns take the first groups), so Compact climate rows stay on one line; column heights are balanced automatically with no gaps, and on mobile it is a single column. Put the card in a section with `column_span` (for example `3`) in Home Assistant's sections view to use the full width on a PC.
+Top-level `section_columns` (`auto`, `1`, `2`, `3`) and `min_column_width` (280–900, default 460) control the group columns. `auto` uses as many equal-width columns as fit (up to 3); below 640px, or when only one fits, groups stack in one column. **Order:** groups are placed in the configured order, each into the currently shortest column, so the first row is groups 1, 2, 3 and reading down the page follows the configured order. Tops are aligned, column widths are equal, and there are no gaps; column bottoms may differ slightly. Pin a group with `column: 1|2|3`. Put the card in a section with `column_span` (for example `3`) in Home Assistant's sections view to use the full width on a PC.
 
 ### Quick-control chips
 
