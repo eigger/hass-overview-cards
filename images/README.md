@@ -11,6 +11,7 @@ Run `python3 -m http.server 8131 --bind 127.0.0.1` in the repository root and op
 | `overview-card-dark.jpg` | `preview.html?scenario=alert&width=1500&theme=dark&capture=true` | 1516 × 710 |
 | `overview-card-mobile.jpg` | `preview.html?scenario=alert&width=390&capture=true` in a 390px frame | 390 × 1700 |
 | `overview-tiles.jpg`, `overview-tiles-clear.jpg`, `overview-tiles-offline.jpg` | `preview.html?variant=tiles&scenario=alert\|normal\|offline&capture=true` | 422 × 432 / 336 / 336 |
+| `visual-editor.jpg` (Korean UI only) | `editor.html?capture=true&open=sections,sections-0,alerts` | 1300 × 1020 |
 | `showcase-light.jpg`, `showcase-dark.jpg` | `showcase.html?capture=true` (`&theme=dark`) | 1200 × 1320 |
 
 `./scripts/capture-images.sh` regenerates every image (macOS, Google Chrome and `sips`).
@@ -23,4 +24,4 @@ Headless Chrome does not render pages narrower than 500px, so the mobile image l
 
 Images without a suffix are English and are used by `README.md` and the English sections of the guides. `*-ko.jpg` are the Korean versions used by `README.ko.md` and the Korean sections. The preview pages render English by default; add `lang=ko` to the URL for the Korean captures.
 
-The card's own labels are Korean-only in the bundle, so English captures swap the Korean sample text and card-rendered labels in the page's DOM through `examples/preview-locale.js` (preview only; the bundle is unchanged). The shared mocked states and card configuration live in `examples/states.js`.
+The card's own labels are Korean-only in the bundle, so English captures swap the Korean sample text and card-rendered labels in the page's DOM through `examples/preview-locale.js` (preview only; the bundle is unchanged). `examples/preview-form.js` replaces Home Assistant's `<ha-form>` with plain controls for the editor preview only. The shared mocked states and card configuration live in `examples/states.js`.

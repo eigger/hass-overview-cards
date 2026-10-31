@@ -23,6 +23,12 @@
 
 [카드 가이드](docs/compact-overview-card.md) · [쇼케이스](docs/showcase.md) · [쇼케이스 설정](examples/showcase.yaml) · [기준 문서](STANDARDS.md)
 
+## 시각 편집기
+
+카드 추가 화면에서 카드를 고르면(미리보기가 표시됩니다) UI로 바로 편집할 수 있습니다. 카드 제목과 열 수, 알림, 그룹별 이름·아이콘·탭 이동 경로·헤더 요약(켜진 수, 냉난방, 값 하나)·헤더 센서 값·빠른 조작 칩을 추가, 순서 변경, 삭제할 수 있습니다. compact `items` 행, `tiles`, `status`/`health` 요약 항목은 코드 편집기(YAML)에서 편집하며 편집기를 거쳐도 그대로 보존됩니다. 카드 추가 화면의 기본 구성은 가지고 계신 조명, 냉난방, 센서로 자동 생성됩니다.
+
+![카드 미리보기와 나란히 보이는 시각 편집기](images/visual-editor.jpg)
+
 ## 설치
 
 `compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 JavaScript 모듈로 등록합니다 (`/local/compact-overview-card.js`). 칩은 다른 카드가 필요 없습니다. `items`로 `compact-home-panel` 행을 함께 넣는 경우에만 [Compact Cards](https://github.com/eigger/hass-compact-cards)도 설치하세요. HACS 사용 시 Custom repositories에 이 저장소를 **Dashboard**로 추가합니다.

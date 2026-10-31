@@ -26,6 +26,7 @@ for lang in en ko; do
   shot "overview-tiles$suffix" 422,432 "$BASE/preview.html?variant=tiles&scenario=alert&capture=true$q"
   shot "overview-tiles-clear$suffix" 422,336 "$BASE/preview.html?variant=tiles&scenario=normal&capture=true$q"
   shot "overview-tiles-offline$suffix" 422,336 "$BASE/preview.html?variant=tiles&scenario=offline&capture=true$q"
+  [ "$lang" = ko ] && shot "visual-editor" 1300,1020 "$BASE/editor.html?capture=true&open=sections,sections-0,alerts"
   shot "showcase-light$suffix" 1200,1320 "$BASE/showcase.html?capture=true$q"
   shot "showcase-dark$suffix" 1200,1320 "$BASE/showcase.html?theme=dark&capture=true$q"
 done

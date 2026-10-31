@@ -19,6 +19,19 @@
 
 </details>
 
+## 시각 편집기
+
+카드 추가 화면에서 `Compact overview card`를 선택하면 미리보기가 나오고, 편집 화면에서 YAML 없이 설정할 수 있습니다.
+
+![카드 미리보기와 시각 편집기](../images/visual-editor.jpg)
+
+- **카드**: 제목(비우면 숨김), 그룹 열 수, 열 최소 폭.
+- **알림**: 엔티티, 표시 이름, 조건(`이 상태일 때`/`이 상태가 아닐 때`와 상태 값), 수준, 이동 경로.
+- **그룹**: 이름, 아이콘, 탭 이동 경로, 열 고정, 헤더 요약(켜진 수 · 냉난방 · 값 하나), 헤더 센서 값, 빠른 조작 칩. 그룹·알림·칩은 추가, 위/아래 이동, 삭제를 지원합니다. 칩이 하나뿐이고 `items`가 없으면 마지막 칩은 삭제할 수 없습니다(그룹이 비게 되므로).
+- **YAML에서만 편집**: compact `items` 행, `tiles`, `status`/`health` 요약의 항목은 UI에 표시되지 않지만 편집기를 거쳐도 변경되지 않습니다. UI 편집기와 코드 편집기를 오가며 사용할 수 있습니다.
+- 카드 추가 화면의 기본 구성은 가지고 계신 `light`/`switch`, `climate`, `sensor` 엔티티로 그룹을 자동으로 만듭니다.
+- Home Assistant가 폼 구성요소를 불러오지 못하면 편집기에 YAML 안내가 표시됩니다.
+
 ## 기본 설정
 
 ```yaml
@@ -125,6 +138,8 @@ sections:
 - YAML 모드 대시보드에서 따옴표 없는 `on`/`off`는 불리언으로 읽힙니다. 카드가 `on`/`off`로 되돌려 비교하지만 따옴표를 권장합니다.
 
 ## English
+
+The card has a visual editor (card picker preview, alerts and groups with summary, readings and chips; add/reorder/delete). Compact `items`, `tiles` and `status`/`health` summary items stay in the code editor and are preserved.
 
 ![Overview card with items that need attention](../images/overview-card.jpg)
 

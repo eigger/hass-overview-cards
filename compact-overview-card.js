@@ -297,8 +297,22 @@
     }
     getGridOptions() { return { columns: 12, min_columns: 6 }; }
     static getStubConfig(hass) {
-      const light = Object.keys(hass?.states || {}).filter(id => id.startsWith('light.')).slice(0, 3);
-      return { name: '우리집', tiles: [{ type: 'count', name: '조명', icon: 'mdi:lightbulb-group', entities: light.length ? light : ['light.living_room'] }] };
+      const ids = Object.keys(hass?.states || {}), pick = (domain, n) => ids.filter(id => id.startsWith(`${domain}.`)).slice(0, n);
+      const lights = [...pick('light', 4), ...pick('switch', 2)].slice(0, 6), climates = pick('climate', 2);
+      const sections = [];
+      if (lights.length) sections.push({ name: '조명', icon: 'mdi:lightbulb-group', summary: { type: 'count', entities: lights }, controls: lights.map(entity => ({ entity })) });
+      if (climates.length) sections.push({ name: '냉난방', icon: 'mdi:thermostat', summary: { type: 'climate', entities: climates }, controls: climates.map(entity => ({ entity })) });
+      const sensors = pick('sensor', 4);
+      if (sensors.length) sections.push({ name: '센서', icon: 'mdi:gauge', controls: sensors.map(entity => ({ entity })) });
+      if (!sections.length) sections.push({ name: '조명', icon: 'mdi:lightbulb-group', summary: { type: 'count', entities: ['light.living_room'] }, controls: [{ entity: 'light.living_room' }] });
+      return { name: '우리집', sections };
+    }
+    static async getConfigElement() {
+      // HA loads ha-form lazily together with its own card editors; ask a built-in editor to load it.
+      if (!customElements.get('ha-form') && window.loadCardHelpers) {
+        try { const helpers = await window.loadCardHelpers(); const card = helpers.createCardElement({ type: 'entities', entities: [] }); await card.constructor.getConfigElement?.(); } catch { /* the editor falls back to a hint */ }
+      }
+      return document.createElement('compact-overview-card-editor');
     }
 
     _more(id) {
@@ -678,9 +692,191 @@
     }
   }
 
+
+  // ---- visual editor ---------------------------------------------------------------------
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const SUMMARY_TYPES = [['', '없음'], ['count', '켜진 수 (조명 등)'], ['climate', '냉난방 가동'], ['value', '값 하나'], ['status', '동작 상태 (YAML에서 항목 편집)'], ['health', '이상 여부 (YAML에서 항목 편집)']];
+  const select = options => ({ select: { mode: 'dropdown', options: options.map(([value, label]) => ({ value, label })) } });
+  const textSel = () => ({ text: {} });
+
+  class CompactOverviewCardEditor extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' }); this._open = new Set(); this._forms = [];
+      this.shadowRoot.innerHTML = `<style>
+        :host{display:block}details{border:1px solid var(--divider-color);border-radius:10px;margin:0 0 8px;background:var(--card-background-color)}
+        details details{background:var(--secondary-background-color,transparent)}
+        summary{cursor:pointer;padding:10px 12px;font-weight:500;font-size:14px}.content{padding:4px 12px 12px}
+        .toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+        button{font:inherit;font-size:13px;min-height:36px;padding:0 12px;border:1px solid var(--divider-color);border-radius:8px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer}
+        button:disabled{opacity:.4;cursor:default}button.danger{color:var(--error-color,#db4437)}button.add{margin-top:4px}
+        .hint{font-size:12px;color:var(--secondary-text-color);margin:4px 0 8px}h3{font-size:13px;margin:12px 0 6px;color:var(--secondary-text-color);font-weight:500}
+      </style><div class="root"></div>`;
+    }
+    setConfig(config) {
+      // HA echoes our own config-changed back; skip it so inputs keep focus.
+      const next = JSON.stringify(config || {});
+      this._config = clone(config || {});
+      if (next === this._emitted) return;
+      this._render();
+    }
+    set hass(hass) {
+      const initial = !this._hass; this._hass = hass;
+      for (const form of this._forms) form.hass = hass;
+      if (initial && this._config && !this._hadForm && customElements.get('ha-form')) this._render();
+    }
+    _fire() {
+      this._emitted = JSON.stringify(this._config);
+      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: clone(this._config) }, bubbles: true, composed: true }));
+    }
+    _commit(mutate, rerender = false) { mutate(this._config); this._tidy(); this._fire(); if (rerender) this._render(); }
+    _tidy() {
+      for (const key of ['name', 'min_column_width', 'section_columns']) if (this._config[key] === '' || this._config[key] === undefined || this._config[key] === null) delete this._config[key];
+      if (this._config.alerts && !this._config.alerts.length) delete this._config.alerts;
+      for (const section of this._config.sections || []) for (const key of ['badges', 'controls']) if (Array.isArray(section[key]) && !section[key].length) delete section[key];
+    }
+    _first(domain, fallback) { return Object.keys(this._hass?.states || {}).find(id => id.startsWith(`${domain}.`)) || fallback; }
+
+    _make(tag, props = {}, children = []) {
+      const el = document.createElement(tag);
+      for (const [key, value] of Object.entries(props)) { if (key === 'text') el.textContent = value; else if (key === 'class') el.className = value; else el[key] = value; }
+      el.append(...children); return el;
+    }
+    _form(parent, schema, data, labels, onChange) {
+      if (!customElements.get('ha-form')) {
+        parent.append(this._make('div', { class: 'hint', text: 'Home Assistant 폼 구성요소를 불러오지 못했습니다. 코드 편집기(YAML)로 설정하세요.' })); return;
+      }
+      this._hadForm = true;
+      const form = document.createElement('ha-form');
+      form.computeLabel = item => labels[item.name] || item.name;
+      form.hass = this._hass; form.schema = schema; form.data = data;
+      form.addEventListener('value-changed', event => { event.stopPropagation(); onChange(event.detail.value); });
+      parent.append(form); this._forms.push(form);
+    }
+    _row(parent, key, title, { onUp, onDown, onDelete, canDelete = true }, build) {
+      const details = this._make('details'); details.dataset.key = key; details.open = this._open.has(key);
+      details.addEventListener('toggle', () => this._open[details.open ? 'add' : 'delete'](key));
+      const content = this._make('div', { class: 'content' });
+      const toolbar = this._make('div', { class: 'toolbar' }, [
+        this._make('button', { type: 'button', text: '위로', disabled: !onUp, onclick: onUp }),
+        this._make('button', { type: 'button', text: '아래로', disabled: !onDown, onclick: onDown }),
+        this._make('button', { type: 'button', class: 'danger', text: '삭제', disabled: !canDelete, onclick: onDelete }),
+      ]);
+      content.append(toolbar); build(content);
+      details.append(this._make('summary', { text: title }), content); parent.append(details);
+    }
+    _list(parent, key, title, items, titleOf, addLabel, add, build, { minItems = 0, attach } = {}) {
+      const details = this._make('details'); details.dataset.key = key; details.open = this._open.has(key);
+      details.addEventListener('toggle', () => this._open[details.open ? 'add' : 'delete'](key));
+      const content = this._make('div', { class: 'content' });
+      items.forEach((item, index) => this._row(content, `${key}-${index}`, `${index + 1}. ${titleOf(item)}`, {
+        onUp: index ? () => this._move(items, index, -1) : undefined,
+        onDown: index < items.length - 1 ? () => this._move(items, index, 1) : undefined,
+        onDelete: () => this._commit(() => items.splice(index, 1), true), canDelete: items.length > minItems,
+      }, box => build(box, item, index)));
+      content.append(this._make('button', { type: 'button', class: 'add', text: addLabel, onclick: () => { this._open.add(key); this._commit(() => { attach?.(); add(items); }, true); } }));
+      details.append(this._make('summary', { text: `${title} (${items.length})` }), content); parent.append(details);
+    }
+    _move(items, index, offset) { this._commit(() => { [items[index], items[index + offset]] = [items[index + offset], items[index]]; }, true); }
+
+    _render() {
+      const root = this.shadowRoot.querySelector('.root'); root.replaceChildren(); this._forms = [];
+      const config = this._config || {};
+      // Card
+      this._form(root, [
+        { name: 'name', selector: textSel() },
+        { name: 'section_columns', selector: select([['auto', '자동'], ['1', '1열'], ['2', '2열'], ['3', '3열']]) },
+        { name: 'min_column_width', selector: { number: { min: 280, max: 900, step: 10, mode: 'box' } } },
+      ], { name: config.name ?? '', section_columns: String(config.section_columns ?? 'auto'), min_column_width: config.min_column_width }, { name: '카드 제목 (비우면 숨김)', section_columns: '그룹 열 수', min_column_width: '열 최소 폭(px, 기본 460)' },
+      value => this._commit(c => {
+        c.name = value.name; c.min_column_width = value.min_column_width === '' ? undefined : value.min_column_width;
+        c.section_columns = value.section_columns === 'auto' || value.section_columns === undefined ? undefined : Number(value.section_columns);
+      }));
+      root.append(this._make('h3', { text: '알림 (조건이 맞을 때만 맨 위에 표시)' }));
+      this._alerts(root); root.append(this._make('h3', { text: '그룹 (제목을 누르면 탭으로 이동, 안쪽은 바로 조작)' }));
+      this._groups(root);
+      if (config.tiles?.length) root.append(this._make('div', { class: 'hint', text: `요약 타일(tiles) ${config.tiles.length}개는 코드 편집기(YAML)에서 편집합니다. 그대로 보존됩니다.` }));
+    }
+
+    _alerts(root) {
+      const alerts = this._config.alerts || (this._config.alerts = []);
+      this._list(root, 'alerts', '알림', alerts, alert => alert.name || alert.entity || '알림', '알림 추가',
+        list => list.push({ entity: this._first('binary_sensor', 'binary_sensor.example'), name: '새 알림', when: { state: 'on' }, level: 'warning' }),
+        (box, alert) => {
+          const mode = alert.when?.state_not !== undefined ? 'state_not' : 'state';
+          this._form(box, [
+            { name: 'entity', required: true, selector: { entity: {} } }, { name: 'name', selector: textSel() },
+            { name: 'mode', selector: select([['state', '이 상태일 때 표시'], ['state_not', '이 상태가 아닐 때 표시']]) }, { name: 'value', selector: textSel() },
+            { name: 'level', selector: select([['warning', '주의'], ['critical', '위험']]) }, { name: 'navigation_path', selector: textSel() },
+          ], { entity: alert.entity, name: alert.name ?? '', mode, value: String(alert.when?.[mode] ?? ''), level: alert.level ?? 'warning', navigation_path: alert.navigation_path ?? '' },
+          { entity: '엔티티', name: '표시 이름', mode: '조건', value: '상태 값 (예: on, unlocked)', level: '수준', navigation_path: '눌렀을 때 이동 경로 (/lovelace/… , 비우면 상세 정보)' },
+          value => this._commit(() => {
+            alert.entity = value.entity; alert.name = value.name || undefined; alert.level = value.level; alert.navigation_path = value.navigation_path || undefined;
+            alert.when = { [value.mode]: value.value };
+            for (const key of Object.keys(alert)) if (alert[key] === undefined) delete alert[key];
+          }));
+        }, { attach: () => { this._config.alerts = alerts; } });
+    }
+
+    _groups(root) {
+      const sections = this._config.sections || (this._config.sections = []);
+      this._list(root, 'sections', '그룹', sections, section => section.name || '그룹', '그룹 추가',
+        list => list.push({ name: '새 그룹', icon: 'mdi:view-grid', controls: [{ entity: this._first('light', 'light.example') }] }),
+        (box, section) => this._group(box, section), { attach: () => { this._config.sections = sections; } });
+    }
+
+    _group(box, section) {
+      const summary = section.summary || {}, type = summary.type || '';
+      const schema = [
+        { name: 'name', required: true, selector: textSel() }, { name: 'icon', selector: { icon: {} } }, { name: 'navigation_path', selector: textSel() },
+        { name: 'column', selector: select([['', '자동'], ['1', '1열'], ['2', '2열'], ['3', '3열']]) }, { name: 'summary_type', selector: select(SUMMARY_TYPES) },
+      ];
+      const data = { name: section.name ?? '', icon: section.icon ?? '', navigation_path: section.navigation_path ?? '', column: section.column ? String(section.column) : '', summary_type: type };
+      if (type === 'count') { schema.push({ name: 'entities', selector: { entity: { multiple: true } } }); data.entities = summary.entities || []; }
+      if (type === 'climate') { schema.push({ name: 'entities', selector: { entity: { multiple: true, domain: 'climate' } } }, { name: 'value_entity', selector: { entity: { domain: 'sensor' } } }); data.entities = summary.entities || []; data.value_entity = summary.value_entity ?? ''; }
+      if (type === 'value') { schema.push({ name: 'entity', required: true, selector: { entity: {} } }, { name: 'secondary_entity', selector: { entity: {} } }); data.entity = summary.entity ?? ''; data.secondary_entity = summary.secondary_entity ?? ''; }
+      this._form(box, schema, data, {
+        name: '그룹 이름', icon: '아이콘', navigation_path: '제목을 누르면 이동할 경로 (/lovelace/… )', column: '열 고정', summary_type: '헤더 요약', entities: '요약에 포함할 엔티티',
+        value_entity: '대표 온도 센서', entity: '요약 값 엔티티', secondary_entity: '보조 값 엔티티',
+      }, value => {
+        const changedType = (value.summary_type || '') !== type;
+        this._commit(() => {
+          section.name = value.name; section.icon = value.icon || undefined; section.navigation_path = value.navigation_path || undefined; section.column = value.column ? Number(value.column) : undefined;
+          const next = value.summary_type || '';
+          if (!next) delete section.summary;
+          else if (changedType) {
+            const entities = [this._first(next === 'climate' ? 'climate' : 'light', next === 'climate' ? 'climate.example' : 'light.example')];
+            section.summary = next === 'value' ? { type: next, entity: this._first('sensor', 'sensor.example') } : (next === 'count' || next === 'climate') ? { type: next, entities } : { type: next, items: summary.items || [{ entity: this._first('sensor', 'sensor.example'), thresholds: [{ value: 0, direction: 'above', level: 'warning' }] }] };
+          } else if (next === 'count' || next === 'climate') {
+            section.summary = { ...section.summary, entities: value.entities?.length ? value.entities : section.summary.entities, value_entity: value.value_entity || undefined };
+          } else if (next === 'value') {
+            section.summary = { ...section.summary, entity: value.entity || section.summary.entity, secondary_entity: value.secondary_entity || undefined };
+          }
+          for (const key of Object.keys(section)) if (section[key] === undefined) delete section[key];
+          if (section.summary) for (const key of Object.keys(section.summary)) if (section.summary[key] === undefined) delete section.summary[key];
+        }, changedType);
+      });
+      if (type === 'status' || type === 'health') box.append(this._make('div', { class: 'hint', text: '이 요약의 항목(상태 값, 임계값)은 코드 편집기(YAML)에서 편집합니다. 그대로 보존됩니다.' }));
+      // Header readings
+      const badges = section.badges || (section.badges = []);
+      const mini = (key, title, list, titleOf, addLabel, makeNew, fields, labels, read, write, minItems = 0) =>
+        this._list(box, key, title, list, titleOf, addLabel, makeNew, (inner, item) => this._form(inner, fields, read(item), labels, value => this._commit(() => write(item, value))), { minItems, attach: () => { section[key.endsWith('badges') ? 'badges' : 'controls'] = list; } });
+      mini(`${section.name}-badges`, '헤더 센서 값', badges, b => b.name || b.entity, '센서 값 추가', l => l.push({ entity: this._first('sensor', 'sensor.example') }),
+        [{ name: 'entity', required: true, selector: { entity: {} } }, { name: 'name', selector: textSel() }], { entity: '엔티티', name: '표시 이름' },
+        b => ({ entity: b.entity, name: b.name ?? '' }), (b, v) => { b.entity = v.entity; b.name = v.name || undefined; if (b.name === undefined) delete b.name; });
+      const controls = section.controls || (section.controls = []);
+      const hasItems = Array.isArray(section.items) && section.items.length;
+      mini(`${section.name}-controls`, '빠른 조작 칩', controls, c => c.name || c.entity, '칩 추가', l => l.push({ entity: this._first('light', 'light.example') }),
+        [{ name: 'entity', required: true, selector: { entity: {} } }, { name: 'name', selector: textSel() }, { name: 'icon', selector: { icon: {} } }], { entity: '엔티티', name: '표시 이름', icon: '아이콘' },
+        c => ({ entity: c.entity, name: c.name ?? '', icon: c.icon ?? '' }), (c, v) => { c.entity = v.entity; c.name = v.name || undefined; c.icon = v.icon || undefined; for (const k of ['name', 'icon']) if (c[k] === undefined) delete c[k]; }, hasItems ? 0 : 1);
+      box.append(this._make('div', { class: 'hint', text: `조명·스위치는 토글, 냉난방은 −/+ 조작, 센서는 값 표시로 자동 선택됩니다. ${hasItems ? `compact 행(items) ${section.items.length}개는 코드 편집기(YAML)에서 편집하며 그대로 보존됩니다.` : ''}` }));
+    }
+  }
+  if (!customElements.get('compact-overview-card-editor')) customElements.define('compact-overview-card-editor', CompactOverviewCardEditor);
+
   if (!customElements.get('compact-overview-card')) customElements.define('compact-overview-card', CompactOverviewCard);
   window.customCards = window.customCards || [];
   if (!window.customCards.some(c => c.type === 'compact-overview-card')) {
-    window.customCards.push({ type: 'compact-overview-card', name: 'Compact overview card', description: '카테고리별 요약 타일과 이상 알림' });
+    window.customCards.push({ type: 'compact-overview-card', name: 'Compact overview card', description: '그룹별 상태 요약, 빠른 조작과 이상 알림', preview: true });
   }
 })();

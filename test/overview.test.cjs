@@ -359,3 +359,66 @@ test('header summary is the last element of a group header, after title and read
   const kinds = [...card.shadowRoot.querySelector('.sec-head').children].map(el => el.className.split(' ')[0]);
   assert.deepEqual(kinds, ['sec-title', 'pill', 'sec-sum']);
 });
+
+const formStub = "customElements.define('ha-form',class extends HTMLElement{});";
+function editor(config, states = { 'light.a': state('light.a', 'on'), 'climate.c': state('climate.c', 'heat'), 'sensor.s': state('sensor.s', '1') }) {
+  const window = new Window({ url: 'http://localhost/' }); window.eval(source); window.eval(formStub);
+  const el = window.document.createElement('compact-overview-card-editor'); window.document.body.append(el);
+  el.hass = { states }; el.setConfig(config);
+  const events = []; el.addEventListener('config-changed', e => events.push(JSON.parse(JSON.stringify(e.detail.config))));
+  const forms = () => [...el.shadowRoot.querySelectorAll('ha-form')];
+  // Simulates a ha-form value-changed event from the nth form.
+  const change = (index, patch) => { const form = forms()[index]; form.dispatchEvent(new window.CustomEvent('value-changed', { detail: { value: { ...form.data, ...patch } } })); };
+  const click = label => [...el.shadowRoot.querySelectorAll('button')].find(b => b.textContent === label).click();
+  return { window, el, events, forms, change, click };
+}
+const validConfig = config => { const { card } = sectioned(config, {}); return Boolean(card); };
+
+test('editor registers, renders forms and every emitted config is accepted by the card', () => {
+  const { window, el, events, click, change } = editor({ name: '집', sections: [{ name: '조명', controls: [{ entity: 'light.a' }] }] });
+  assert.ok(window.customElements.get('compact-overview-card-editor'));
+  assert.ok(window.customElements.get('compact-overview-card').getConfigElement);
+  change(0, { name: '우리집', section_columns: '3', min_column_width: 400 });
+  assert.deepEqual(events.at(-1), { name: '우리집', section_columns: 3, min_column_width: 400, sections: [{ name: '조명', controls: [{ entity: 'light.a' }] }] });
+  click('그룹 추가'); assert.equal(events.at(-1).sections.length, 2); assert.equal(validConfig(events.at(-1)), true);
+  click('알림 추가'); assert.equal(events.at(-1).alerts.length, 1); assert.equal(validConfig(events.at(-1)), true);
+  assert.ok(el.shadowRoot.querySelectorAll('details').length > 3);
+});
+
+test('editor changes summary types with valid defaults, and moves and deletes groups', () => {
+  const { forms, change, click, events, el } = editor({ sections: [{ name: 'a', controls: [{ entity: 'light.a' }] }, { name: 'b', controls: [{ entity: 'light.a' }] }] });
+  // forms: card, then group a (first form inside group a)
+  const groupForm = forms().find(f => f.data && 'summary_type' in f.data);
+  groupForm.dispatchEvent(new (el.ownerDocument.defaultView.CustomEvent)('value-changed', { detail: { value: { ...groupForm.data, summary_type: 'climate' } } }));
+  assert.equal(events.at(-1).sections[0].summary.type, 'climate'); assert.deepEqual(events.at(-1).sections[0].summary.entities, ['climate.c']); assert.equal(validConfig(events.at(-1)), true);
+  click('아래로'); assert.deepEqual(events.at(-1).sections.map(s => s.name), ['b', 'a']);
+  click('삭제'); assert.equal(events.at(-1).sections.length, 1); assert.equal(validConfig(events.at(-1)), true);
+});
+
+test('editor keeps unknown keys, items, tiles and complex summaries untouched and echoes do not re-render', () => {
+  const config = { tiles: [{ type: 'count', name: 'T', entities: ['light.a'] }], sections: [{ name: 'a', items: [{ entity: 'light.a', tap_action: { action: 'toggle' } }], summary: { type: 'status', items: [{ entity: 'sensor.s', active: ['on'] }] }, grid_options: { x: 1 } }], custom: 1 };
+  const { el, forms, events } = editor(config);
+  assert.match(el.shadowRoot.textContent, /tiles\) 1개/); assert.match(el.shadowRoot.textContent, /compact 행\(items\) 1개/);
+  const card = forms()[0]; card.dispatchEvent(new (el.ownerDocument.defaultView.CustomEvent)('value-changed', { detail: { value: { ...card.data, name: 'N' } } }));
+  assert.deepEqual(events.at(-1), { ...config, name: 'N' });
+  const before = el.shadowRoot.querySelector('ha-form');
+  el.setConfig(events.at(-1));
+  assert.equal(el.shadowRoot.querySelector('ha-form'), before);
+});
+
+test('editor without ha-form shows a YAML hint, and the last chip cannot be deleted when there are no items', () => {
+  const window = new Window({ url: 'http://localhost/' }); window.eval(source);
+  const el = window.document.createElement('compact-overview-card-editor'); el.setConfig({ sections: [{ name: 'a', controls: [{ entity: 'light.a' }] }] });
+  assert.match(el.shadowRoot.textContent, /YAML/);
+  const { el: el2 } = editor({ sections: [{ name: 'a', controls: [{ entity: 'light.a' }] }] });
+  const del = [...el2.shadowRoot.querySelectorAll('details details details details button.danger')].filter(b => b.disabled);
+  assert.ok(del.length >= 1);
+});
+
+test('stub config uses available entities for a useful picker preview', () => {
+  const Card = (() => { const window = new Window({ url: 'http://localhost/' }); window.eval(source); return window.customElements.get('compact-overview-card'); })();
+  const stub = Card.getStubConfig({ states: { 'light.a': {}, 'light.b': {}, 'climate.c': {}, 'sensor.s': {} } });
+  assert.deepEqual(JSON.parse(JSON.stringify(stub.sections.map(s => s.name))), ['조명', '냉난방', '센서']);
+  assert.equal(validConfig(JSON.parse(JSON.stringify(stub))), true);
+  assert.equal(validConfig(JSON.parse(JSON.stringify(Card.getStubConfig({ states: {} })))), true);
+});

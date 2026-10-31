@@ -23,6 +23,12 @@ An overview page for Home Assistant that keeps the familiar layout: **sections t
 
 [Card guide](docs/compact-overview-card.md) · [Showcase](docs/showcase.md) · [Showcase configuration](examples/showcase.yaml) · [Standards reference](STANDARDS.md)
 
+## Visual editor
+
+Add the card from the card picker (it shows a live preview) and edit it in the UI: card title and columns, alerts, and per group the name, icon, tab link, header summary (count, climate, value), header readings and quick-control chips, with add, reorder and delete. Compact `items` rows, `tiles` and the `status`/`health` summary items stay editable in the code editor and are preserved untouched. The picker's starter configuration is built from your own lights, climate entities and sensors.
+
+![Visual editor next to the live card](images/visual-editor.jpg)
+
 ## Installation
 
 Install through HACS **Custom repositories** (category **Dashboard**), or copy `compact-overview-card.js` to `/config/www/` and register `/local/compact-overview-card.js` as a JavaScript module in dashboard resources. This project is not in the default HACS catalog.

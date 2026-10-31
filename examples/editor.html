@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Overview Cards · Editor preview</title>
+<style>
+:root{font-family:system-ui,sans-serif;color-scheme:light;--primary-color:#008bba;--primary-text-color:#263238;--secondary-text-color:#66747c;--divider-color:#e3e7e9;--disabled-color:#a5afb5;--card-background-color:#fff;--secondary-background-color:#f2f5f6;--warning-color:#ffa600;--error-color:#db4437}
+body{background:#f2f5f6;margin:16px}body.dark{color-scheme:dark;--primary-text-color:#e6edef;--secondary-text-color:#9caeb6;--divider-color:#35434a;--disabled-color:#66767e;--card-background-color:#202b30;--secondary-background-color:#1a2327;background:#12181b}
+h1{font-size:18px;margin:0 0 4px}p{font-size:13px;color:var(--secondary-text-color);margin:0 0 12px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{min-width:0}.panel h2{font-size:13px;margin:0 0 8px;color:var(--secondary-text-color);font-weight:500}
+body.capture>h1,body.capture>p{display:none}body.capture{margin:8px}
+</style>
+<h1>Overview Cards · 시각 편집기</h1><p>모의 상태와 ha-form 대용 컨트롤을 사용하는 미리보기입니다. 편집하면 왼쪽 카드가 바로 바뀝니다.</p>
+<datalist id="entities"></datalist>
+<div class="layout"><div class="panel"><h2>카드 미리보기</h2><main id="card"></main></div><div class="panel"><h2>편집기</h2><div id="editor"></div></div></div>
+<script src="preview-icons.js"></script><script src="preview-form.js"></script><script>
+customElements.define('ha-card',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:var(--ha-card-background,var(--card-background-color));border:var(--ha-card-border-width,1px) solid var(--divider-color);box-shadow:var(--ha-card-box-shadow,none);border-radius:var(--ha-card-border-radius,14px);color:var(--primary-text-color)}</style><slot></slot>';}});
+customElements.define('ha-icon',class extends HTMLElement{
+ constructor(){super();this.attachShadow({mode:'open'});this._observer=new MutationObserver(()=>this.update());}
+ connectedCallback(){this.update();this._observer.observe(this,{attributes:true,attributeFilter:['icon']});}
+ disconnectedCallback(){this._observer.disconnect();}
+ get icon(){return this.getAttribute('icon');}set icon(value){this.setAttribute('icon',value);}
+ update(){const key=(this.getAttribute('icon')||'').replace('mdi:',''),path=window.compactPreviewIcons?.[key];this.shadowRoot.innerHTML='<style>:host{display:inline-flex;align-items:center;justify-content:center}</style>';if(!path)return;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),glyph=document.createElementNS('http://www.w3.org/2000/svg','path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','100%');svg.setAttribute('height','100%');svg.setAttribute('fill','currentColor');glyph.setAttribute('d',path);svg.append(glyph);this.shadowRoot.append(svg);}
+});
+</script><script src="../compact-overview-card.js"></script><script src="states.js"></script><script>
+const params=new URLSearchParams(location.search),{states,sectionsConfig,scenarios,format,mockService}=overviewPreview;
+if(params.get('theme')==='dark')document.body.classList.add('dark');if(params.get('capture')==='true')document.body.classList.add('capture');
+const initial=states();scenarios.alert(initial);
+const hass={states:initial,formatEntityState:format};
+document.querySelector('#entities').innerHTML=Object.keys(initial).map(id=>`<option value="${id}">`).join('');
+const card=document.createElement('compact-overview-card');hass.callService=mockService(hass,()=>{card.hass={...hass};});
+// Start from the picker's stub so the editor is shown with a realistic, small configuration.
+let config=params.get('full')==='true'?sectionsConfig():{...customElements.get('compact-overview-card').getStubConfig(hass),alerts:[{entity:'binary_sensor.kitchen_leak',name:'누수 · 주방',when:{state:'on'},level:'critical'}]};
+card.setConfig(config);card.hass=hass;document.querySelector('#card').append(card);
+(async()=>{
+ const editor=await customElements.get('compact-overview-card').getConfigElement();editor.hass=hass;editor.setConfig(config);
+ editor.addEventListener('config-changed',event=>{config=event.detail.config;try{card.setConfig(config);}catch(error){console.warn(error.message);}editor.setConfig(config);});
+ document.querySelector('#editor').append(editor);window.__editor=editor;
+ for(const key of (params.get('open')||'').split(',').filter(Boolean))editor._open.add(key);if(params.get('open'))editor._render();
+})();
+</script></html>

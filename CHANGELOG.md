@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.5.0 — 2026-10-31
+
+- Add a visual editor (`getConfigElement`): card title and columns, alerts, and groups with header summary (count, climate, value), readings and quick-control chips, including add, reorder and delete. `items`, `tiles` and `status`/`health` summaries remain YAML-only and are preserved. Enable the card picker preview and build the starter configuration from the user's own lights, climate entities and sensors.
+
 ## 0.4.0 — 2026-10-31
 
 - Replace the CSS multi-column layout with ordered shortest-column placement: groups follow the configured order, tops are aligned, columns have equal widths and there are no gaps. Fixes the third column starting 12px lower in WebKit (Home Assistant app, Safari) and very uneven column heights. Verified identical in Chromium and WebKit. Add `min_column_width` and per-group `column`.
