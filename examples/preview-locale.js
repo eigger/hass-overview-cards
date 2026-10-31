@@ -219,7 +219,7 @@ const dictionary={
  '일부 기기가 응답하지 않을 때':'When some devices do not respond',
  '우리집 · 한눈에 보는 요약과 확인이 필요한 알림':'My Home · An at-a-glance summary and alerts that need attention',
  '실제 Overview Cards로 구성한 모의 대시보드입니다. 표시된 값과 동작은 예시이며 실제 기기에 연결하지 않습니다.':'A mock dashboard built with the real Overview Cards. Values and actions are examples and nothing is connected to real devices.',
- '방 단위 섹션 · 직접 조작 가능':'Room sections · direct control',
+ '탭 단위 섹션 · 직접 조작 가능':'Tab sections · direct control',
  '요약 타일 · 확인 필요한 항목이 있을 때':'Summary tiles · When something needs attention',
  '요약 타일 · 모두 정상일 때':'Summary tiles · When everything is normal',
  '요약 타일 · 일부 기기가 응답하지 않을 때':'Summary tiles · When some devices do not respond',

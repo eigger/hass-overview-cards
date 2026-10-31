@@ -1,70 +1,243 @@
 # HTML showcase와 동일한 카드 설정입니다. 엔티티 ID는 실제 환경에 맞게 변경하세요.
-title: "Overview Cards"
+# 섹션 행은 compact-cards.js(compact-home-panel)가 필요합니다.
+title: Overview Cards
 views:
-  - title: "홈"
-    path: "overview"
-    type: "sections"
-    max_columns: 3
-    sections:
-      - type: "grid"
-        cards:
-          - type: "custom:compact-overview-card"
-            name: "우리집 요약"
-            columns: "auto"
-            alerts:
-              - entity: "binary_sensor.kitchen_leak"
-                name: "누수 · 주방"
-                when: { state: "on" }
-                level: "critical"
-                navigation_path: "/lovelace/rooms"
-              - entity: "binary_sensor.mech_leak"
-                name: "누수 · 실외기실"
-                when: { state: "on" }
-                level: "critical"
-                navigation_path: "/lovelace/rooms"
-              - entity: "lock.gas_valve"
-                name: "가스 밸브 열림"
-                when: { state: "unlocked" }
-                level: "warning"
-            tiles:
-              - type: "count"
-                name: "조명"
-                icon: "mdi:lightbulb-group"
-                entities: ["light.living_1", "light.living_2", "light.living_accent", "light.bedroom_night", "light.bedroom_accent", "switch.kitchen", "switch.dining", "switch.hall"]
-                navigation_path: "/lovelace/rooms"
-              - type: "climate"
-                name: "냉난방"
-                icon: "mdi:thermostat"
-                entities: ["climate.living_heater", "climate.bedroom_heater", "climate.living_ac", "climate.bedroom_ac"]
-                value_entity: "sensor.living_temperature"
-                navigation_path: "/lovelace/rooms"
-              - type: "status"
-                name: "가전"
-                icon: "mdi:washing-machine"
-                idle_text: "모두 대기"
-                items:
-                  - { entity: "sensor.washer_state", name: "세탁", active: ["running"], remaining: "sensor.washer_remaining" }
-                  - { entity: "sensor.dryer_state", name: "건조", active: ["running"] }
-                  - { entity: "sensor.dishwasher_state", name: "식세기", active: ["running"] }
-                navigation_path: "/lovelace/appliances"
-              - type: "value"
-                name: "공기"
-                icon: "mdi:air-filter"
-                entity: "sensor.pm2_5"
-                thresholds:
-                  - { value: 35, direction: "above", level: "warning" }
-                  - { value: 75, direction: "above", level: "critical" }
-                navigation_path: "/lovelace/air"
-              - type: "value"
-                name: "에너지"
-                icon: "mdi:flash"
-                entity: "sensor.power"
-                secondary_entity: "sensor.bill"
-                navigation_path: "/lovelace/manage"
-              - type: "health"
-                name: "서버"
-                icon: "mdi:server"
-                items:
-                  - { entity: "sensor.ssd_smart", problem: { state_not: "PASSED" }, level: "critical" }
-                  - { entity: "sensor.cpu_temp", thresholds: [{ value: 75, direction: "above", level: "warning" }] }
-                navigation_path: "/lovelace/proxmox"
+- title: 홈
+  path: overview
+  type: sections
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: custom:compact-overview-card
+      name: 우리집 요약
+      section_columns: auto
+      alerts:
+      - entity: binary_sensor.kitchen_leak
+        name: 누수 · 주방
+        when:
+          state: 'on'
+        level: critical
+        navigation_path: "/lovelace/rooms"
+      - entity: binary_sensor.mech_leak
+        name: 누수 · 실외기실
+        when:
+          state: 'on'
+        level: critical
+        navigation_path: "/lovelace/rooms"
+      - entity: lock.gas_valve
+        name: 가스 밸브 열림
+        when:
+          state: unlocked
+        level: warning
+      sections:
+      - name: 조명
+        icon: mdi:lightbulb-group
+        navigation_path: "/lovelace/rooms"
+        columns: 2
+        summary:
+          type: count
+          entities:
+          - light.living_1
+          - light.living_2
+          - light.living_accent
+          - light.bedroom_night
+          - light.bedroom_accent
+          - switch.kitchen
+          - switch.dining
+          - switch.hall
+        badges:
+        - entity: sensor.illuminance
+          name: 거실 조도
+        items:
+        - entity: light.living_1
+          name: 거실등 1
+          tap_action:
+            action: toggle
+        - entity: light.living_2
+          name: 거실등 2
+          tap_action:
+            action: toggle
+        - entity: light.living_accent
+          name: 거실 간접등
+          tap_action:
+            action: toggle
+        - entity: light.bedroom_night
+          name: 안방 취침등
+          tap_action:
+            action: toggle
+        - entity: light.bedroom_accent
+          name: 안방 간접등
+          tap_action:
+            action: toggle
+        - entity: switch.kitchen
+          name: 주방등
+          tap_action:
+            action: toggle
+        - entity: switch.dining
+          name: 식탁등
+          tap_action:
+            action: toggle
+        - entity: switch.hall
+          name: 복도등
+          tap_action:
+            action: toggle
+      - name: 냉난방
+        icon: mdi:thermostat
+        navigation_path: "/lovelace/rooms"
+        columns: 2
+        summary:
+          type: climate
+          entities:
+          - climate.living_heater
+          - climate.bedroom_heater
+          - climate.living_ac
+          - climate.bedroom_ac
+          value_entity: sensor.living_temperature
+        badges:
+        - entity: sensor.living_temperature
+          name: 거실
+        - entity: sensor.bedroom_temperature
+          name: 안방
+        items:
+        - type: climate
+          entity: climate.living_heater
+          name: 거실 보일러
+        - type: climate
+          entity: climate.bedroom_heater
+          name: 안방 보일러
+        - type: climate
+          entity: climate.living_ac
+          name: 거실 에어컨
+        - type: climate
+          entity: climate.bedroom_ac
+          name: 안방 에어컨
+      - name: 공기
+        icon: mdi:air-filter
+        navigation_path: "/lovelace/air"
+        columns: 2
+        summary:
+          type: value
+          entity: sensor.pm2_5
+          thresholds:
+          - value: 36
+            direction: above
+            level: warning
+          - value: 76
+            direction: above
+            level: critical
+        items:
+        - entity: switch.purifier
+          name: 공기청정기
+          tap_action:
+            action: toggle
+        - entity: switch.dehumidifier
+          name: 제습기
+          tap_action:
+            action: toggle
+        - entity: sensor.pm2_5
+          name: 거실 PM2.5
+          tap_action:
+            action: more-info
+        - entity: sensor.humidity
+          name: 거실 습도
+          tap_action:
+            action: more-info
+      - name: 가전
+        icon: mdi:washing-machine
+        navigation_path: "/lovelace/appliances"
+        columns: 1
+        summary:
+          type: status
+          idle_text: 모두 대기
+          items:
+          - entity: sensor.washer_state
+            name: 세탁
+            active:
+            - running
+            remaining: sensor.washer_remaining
+          - entity: sensor.dryer_state
+            name: 건조
+            active:
+            - running
+          - entity: sensor.dishwasher_state
+            name: 식세기
+            active:
+            - running
+        items:
+        - entity: sensor.washer_state
+          name: 세탁기
+          tap_action:
+            action: more-info
+        - entity: sensor.dryer_state
+          name: 건조기
+          tap_action:
+            action: more-info
+        - entity: sensor.dishwasher_state
+          name: 식기세척기
+          tap_action:
+            action: more-info
+      - name: 에너지
+        icon: mdi:flash
+        navigation_path: "/lovelace/manage"
+        columns: 2
+        summary:
+          type: value
+          entity: sensor.power
+          secondary_entity: sensor.bill
+        items:
+        - entity: sensor.power
+          name: 현재 전력
+          tap_action:
+            action: more-info
+        - entity: sensor.bill
+          name: 예상 전기요금
+          tap_action:
+            action: more-info
+        - entity: sensor.gas_month
+          name: 이번 달 가스
+          tap_action:
+            action: more-info
+        - entity: sensor.water_month
+          name: 이번 달 수도
+          tap_action:
+            action: more-info
+      - name: 서버
+        icon: mdi:server
+        navigation_path: "/lovelace/proxmox"
+        columns: 2
+        summary:
+          type: health
+          items:
+          - entity: sensor.ssd_smart
+            problem:
+              state_not: PASSED
+            level: critical
+          - entity: sensor.cpu_temp
+            thresholds:
+            - value: 75
+              direction: above
+              level: warning
+        items:
+        - entity: sensor.ssd_smart
+          name: SSD SMART
+          tap_action:
+            action: more-info
+        - entity: sensor.ssd_temp
+          name: SSD 온도
+          tap_action:
+            action: more-info
+        - entity: sensor.cpu_usage
+          name: CPU 사용률
+          tap_action:
+            action: more-info
+        - entity: sensor.memory_usage
+          name: 메모리 사용률
+          tap_action:
+            action: more-info
+        - entity: sensor.cpu_temp
+          name: CPU 온도
+          tap_action:
+            action: more-info
+      grid_options:
+        columns: full

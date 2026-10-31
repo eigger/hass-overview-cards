@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-![Overview with alerts and room sections that keep their controls](images/overview-card.jpg)
+![Overview with alerts and per-tab sections that keep their controls](images/overview-card.jpg)
 
 *Rendered with the actual card JavaScript and mocked states. This is a local preview, not live-device verification.*
 
@@ -17,7 +17,7 @@
 
 </details>
 
-An overview page for Home Assistant that keeps the familiar layout: **room sections with a summary in the header and the real controls underneath**, plus an **alert strip** for things that need attention. Controls are [Compact Cards](https://github.com/eigger/hass-compact-cards) `compact-home-panel` rows, so lights toggle, climate adjusts and sensors open their details right on the overview.
+An overview page for Home Assistant that keeps the familiar layout: **one section per dashboard tab, each with a summary in the header and the real controls underneath**, plus an **alert strip** for things that need attention. Controls are [Compact Cards](https://github.com/eigger/hass-compact-cards) `compact-home-panel` rows, so lights toggle, climate adjusts and sensors open their details right on the overview.
 
 `custom:compact-overview-card` · one JavaScript file · sections require `compact-cards.js` from Compact Cards (summary tiles do not)
 
@@ -43,7 +43,7 @@ alerts:                  # shown only while the condition matches; zero height o
 sections:
   - name: Lights
     icon: mdi:lightbulb-group
-    navigation_path: /lovelace/rooms      # tapping the section title opens this view
+    navigation_path: /lovelace/rooms      # tapping the section title opens that tab
     columns: 2                            # columns of the embedded rows: auto | 1 | 2
     summary:                              # one-line summary in the header (same options as a tile)
       type: count

@@ -1,8 +1,8 @@
 # Compact overview card — 오버뷰 요약
 
-![알림과 직접 조작이 되는 방 단위 섹션](../images/overview-card-ko.jpg)
+![알림과 직접 조작이 되는 탭 단위 섹션](../images/overview-card-ko.jpg)
 
-원래 오버뷰 구성(제목 + 조작 행)을 유지하면서 **섹션 헤더에 한 줄 요약**을 붙이고 **확인이 필요한 알림**을 위에 모아 보여줍니다. 섹션 안의 행은 `compact-home-panel`이라서 직접 조작할 수 있습니다. 조작 없는 요약 격자가 필요하면 `tiles`를 사용합니다. 이미지는 모의 상태를 사용하는 로컬 미리보기이며 실제 화면은 설정과 카드 너비에 따라 달라집니다.
+원래 오버뷰 구성(탭마다 제목 + 조작 행)을 유지하면서 **섹션 헤더에 한 줄 요약**을 붙이고 **확인이 필요한 알림**을 위에 모아 보여줍니다. 섹션 안의 행은 `compact-home-panel`이라서 직접 조작할 수 있습니다. 조작 없는 요약 격자가 필요하면 `tiles`를 사용합니다. 이미지는 모의 상태를 사용하는 로컬 미리보기이며 실제 화면은 설정과 카드 너비에 따라 달라집니다.
 
 <details>
 <summary>모바일, 어두운 테마, 정상 상태, 요약 타일</summary>
@@ -62,7 +62,7 @@ sections:
 | 옵션 | 필수 | 기본값 | 설명 |
 | --- | --- | --- | --- |
 | `type` | 예 | — | `custom:compact-overview-card` |
-| `sections` | 예* | — | 방 단위 섹션 목록 |
+| `sections` | 예* | — | 탭(뷰) 단위 섹션 목록. 섹션 하나가 대시보드 탭 하나를 요약하고 제목이 그 탭으로 이동합니다 |
 | `tiles` | 예* | — | 조작 없는 요약 타일 목록. `*` `sections`와 `tiles` 중 하나 이상 필요 |
 | `name` | 아니요 | 없음 | 카드 제목 |
 | `columns` | 아니요 | `auto` | 타일 열 수 `auto`, `2`, `3`, `4`. `auto`는 카드 너비 421px부터 3열, 700px부터 4열 |
@@ -104,7 +104,7 @@ sections:
 
 ![Overview card with items that need attention](../images/overview-card.jpg)
 
-The overview card keeps the familiar overview layout (a title plus controls) and adds a **one-line summary in each section header** and **alerts that need attention** on top. Rows inside a section are `compact-home-panel` rows, so they can be operated directly. For a controls-free grid use `tiles`. The images use mocked states.
+The overview card keeps the familiar overview layout (one section per dashboard tab, each a title plus controls) and adds a **one-line summary in each section header** and **alerts that need attention** on top. Rows inside a section are `compact-home-panel` rows, so they can be operated directly. For a controls-free grid use `tiles`. The images use mocked states.
 
 Sections (`sections[]`: `name`, `items`, optional `icon`, `navigation_path`, `columns`, `summary`, `badges`) embed `compact-home-panel` and need the Compact Cards resource; `section_columns` (`auto`, `1`, `2`, `3`) flows sections down columns. Options: `sections` and/or `tiles` (at least one), `name`, `columns` (`auto`, `2`, `3`, `4`; `auto` switches to 3 columns from 421px and 4 from 700px) and `alerts`. Tile types: `count` (`on / available`), `climate` (`N running`, standby, off), `status` (running items with remaining time, otherwise `idle_text`), `value` (reading with thresholds) and `health` (worst level count, otherwise "no issues"). `navigation_path` accepts local paths starting with `/` only; without one, tapping opens the entity that explains the summary.
 

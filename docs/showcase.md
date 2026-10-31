@@ -1,6 +1,6 @@
 # 쇼케이스와 대표 이미지
 
-`examples/showcase.html`은 방 단위 섹션 오버뷰와, 세 가지 상황(확인 필요·정상·연결 불가)의 요약 타일을 보여 주는 모의 대시보드입니다. 섹션의 조작 행은 실제 `compact-home-panel`이라서 토글과 냉난방 조작이 모의 상태에 반영됩니다. 실제 `compact-overview-card.js` 구현을 그대로 생성하며, 카드 내부 모양을 HTML로 다시 그리거나 스크린샷용 스타일로 덮어쓰지 않습니다.
+`examples/showcase.html`은 탭 단위 섹션 오버뷰와, 세 가지 상황(확인 필요·정상·연결 불가)의 요약 타일을 보여 주는 모의 대시보드입니다. 섹션의 조작 행은 실제 `compact-home-panel`이라서 토글과 냉난방 조작이 모의 상태에 반영됩니다. 실제 `compact-overview-card.js` 구현을 그대로 생성하며, 카드 내부 모양을 HTML로 다시 그리거나 스크린샷용 스타일로 덮어쓰지 않습니다.
 
 ## 로컬 실행
 
@@ -29,4 +29,4 @@
 
 ## English
 
-`examples/showcase.html` is a mock dashboard with the room-section overview and, below it, the summary tiles in three situations (needs attention, everything normal, devices unavailable). Section rows are real `compact-home-panel` rows, so toggles and climate controls change the mocked state. Only `ha-card` and `ha-icon` are local stand-ins; scenarios change mocked entity states only (`examples/states.js`). Run `./scripts/fetch-vendor.sh` once to download `vendor/compact-cards.js` (preview only, git-ignored), then run `python3 -m http.server 8131 --bind 127.0.0.1` in the repository root and open `/examples/showcase.html` (add `?lang=ko` for Korean, `?theme=dark` for the dark theme, `&capture=true` to hide the theme button). `examples/showcase.yaml` holds the same card configuration for Home Assistant. Screenshots are real browser captures; see [images/README.md](../images/README.md).
+`examples/showcase.html` is a mock dashboard with the per-tab section overview and, below it, the summary tiles in three situations (needs attention, everything normal, devices unavailable). Section rows are real `compact-home-panel` rows, so toggles and climate controls change the mocked state. Only `ha-card` and `ha-icon` are local stand-ins; scenarios change mocked entity states only (`examples/states.js`). Run `./scripts/fetch-vendor.sh` once to download `vendor/compact-cards.js` (preview only, git-ignored), then run `python3 -m http.server 8131 --bind 127.0.0.1` in the repository root and open `/examples/showcase.html` (add `?lang=ko` for Korean, `?theme=dark` for the dark theme, `&capture=true` to hide the theme button). `examples/showcase.yaml` holds the same card configuration for Home Assistant. Screenshots are real browser captures; see [images/README.md](../images/README.md).

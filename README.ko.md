@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-![알림과 직접 조작이 되는 방 단위 섹션을 보여주는 오버뷰](images/overview-card-ko.jpg)
+![알림과 직접 조작이 되는 탭 단위 섹션을 보여주는 오버뷰](images/overview-card-ko.jpg)
 
 *실제 카드 JavaScript와 모의 상태로 렌더링했습니다. 로컬 미리보기이며 실제 기기 검증이 아닙니다.*
 
@@ -17,7 +17,7 @@
 
 </details>
 
-익숙한 오버뷰 구성을 유지하는 카드입니다. **방 단위 섹션의 헤더에 요약을 보여주고 그 아래에 실제 조작 행을 그대로** 두며, 확인이 필요한 항목은 **알림 띠**로 보여줍니다. 조작 행은 [Compact Cards](https://github.com/eigger/hass-compact-cards)의 `compact-home-panel`이라서 오버뷰에서 바로 조명을 켜고 끄고, 냉난방을 조절하고, 센서 상세를 열 수 있습니다.
+익숙한 오버뷰 구성을 유지하는 카드입니다. **탭(뷰) 단위 섹션의 헤더에 요약을 보여주고 그 아래에 실제 조작 행을 그대로** 두며, 확인이 필요한 항목은 **알림 띠**로 보여줍니다. 조작 행은 [Compact Cards](https://github.com/eigger/hass-compact-cards)의 `compact-home-panel`이라서 오버뷰에서 바로 조명을 켜고 끄고, 냉난방을 조절하고, 센서 상세를 열 수 있습니다.
 
 `custom:compact-overview-card` · JavaScript 한 파일 · 섹션은 Compact Cards의 `compact-cards.js`가 필요합니다(요약 타일은 불필요)
 
@@ -41,7 +41,7 @@ alerts:                  # 조건이 맞을 때만 표시, 없으면 높이 0
 sections:
   - name: 조명
     icon: mdi:lightbulb-group
-    navigation_path: /lovelace/rooms      # 섹션 제목을 누르면 이동
+    navigation_path: /lovelace/rooms      # 섹션 제목을 누르면 해당 탭으로 이동
     columns: 2                            # 조작 행의 열 수: auto | 1 | 2
     summary:                              # 헤더의 한 줄 요약(타일과 같은 옵션)
       type: count
