@@ -1,0 +1,12 @@
+{
+  "name": "hass-overview-cards",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Overview cards for Home Assistant: category summary tiles and attention alerts.",
+  "scripts": {
+    "check": "node --check compact-overview-card.js",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=22" },
+  "devDependencies": { "happy-dom": "^21.0.4" }
+}

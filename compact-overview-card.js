@@ -1,0 +1,311 @@
+// Compact overview card: category tiles that summarise a home at a glance.
+// Standalone resource. It reads entity states only and never calls services.
+(() => {
+  const TILE_TYPES = ['count', 'climate', 'status', 'value', 'health'];
+  const LEVELS = { warning: 1, critical: 2 };
+  const ID = /^[a-z_]+\.[a-z0-9_]+$/;
+  const unusable = s => !s || s.state === 'unknown' || s.state === 'unavailable';
+  const text = (el, value) => { const v = String(value ?? ''); if (el.textContent !== v) el.textContent = v; };
+  const attr = (el, key, value) => { const v = String(value); if (el.getAttribute(key) !== v) el.setAttribute(key, v); };
+  const safePath = p => typeof p === 'string' && p.startsWith('/') && !p.startsWith('//') && !/[\\\s]/.test(p);
+
+  // Rules are explicit: the card never guesses what "normal" means for a sensor.
+  function matches(state, when) {
+    if (unusable(state) || !when) return false;
+    if (when.state !== undefined) return state.state === String(when.state);
+    if (when.state_not !== undefined) return state.state !== String(when.state_not);
+    return false;
+  }
+  function thresholdLevel(state, thresholds) {
+    if (unusable(state) || !thresholds) return '';
+    const value = Number(state.state);
+    if (state.state.trim?.() === '' || !Number.isFinite(value)) return '';
+    let level = '';
+    for (const t of thresholds) {
+      const hit = t.direction === 'above' ? value >= t.value : value <= t.value;
+      if (hit && (LEVELS[t.level] || 0) > (LEVELS[level] || 0)) level = t.level;
+    }
+    return level;
+  }
+  const worse = (a, b) => ((LEVELS[b] || 0) > (LEVELS[a] || 0) ? b : a);
+
+  function validateRule(rule, where, fail) {
+    if (rule === undefined) return;
+    if (!rule || typeof rule !== 'object' || (rule.state === undefined) === (rule.state_not === undefined)) fail(`${where}에는 state 또는 state_not 중 하나가 필요합니다.`);
+  }
+  function validateThresholds(list, where, fail) {
+    if (list === undefined) return;
+    if (!Array.isArray(list) || list.some(t => !t || !Number.isFinite(t.value) || !['above', 'below'].includes(t.direction) || !LEVELS[t.level])) fail(`${where}.thresholds에는 value, direction(above/below), level(warning/critical)이 필요합니다.`);
+  }
+  const entityList = (list, where, fail) => {
+    if (!Array.isArray(list) || !list.length || list.some(id => typeof id !== 'string' || !ID.test(id))) fail(`${where}에는 엔티티 ID 목록이 필요합니다.`);
+  };
+  const itemList = (list, where, fail) => {
+    if (!Array.isArray(list) || !list.length || list.some(i => !i || typeof i.entity !== 'string' || !ID.test(i.entity))) fail(`${where}에는 entity가 있는 항목 목록이 필요합니다.`);
+  };
+
+  class CompactOverviewCard extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+      this._tiles = []; this._alerts = [];
+      this.shadowRoot.innerHTML = `<style>
+        :host{display:block;container-type:inline-size;-webkit-tap-highlight-color:transparent;
+          --compact-control-surface:color-mix(in srgb,var(--primary-text-color) 4%,transparent);
+          --compact-icon-surface:color-mix(in srgb,var(--primary-color) 10%,transparent)}
+        ha-card{padding:10px;box-shadow:none;border-radius:var(--ha-card-border-radius,14px)}
+        header{display:flex;align-items:center;gap:8px;min-height:28px;padding:0 2px 8px}
+        header[hidden]{display:none}
+        h2{margin:0;font-size:15px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .badge{font-size:12px;border-radius:999px;background:var(--compact-control-surface);padding:2px 8px;color:var(--secondary-text-color);white-space:nowrap}
+        .badge[hidden]{display:none}
+        .alerts{display:grid;gap:6px;margin-bottom:8px}.alerts:empty{display:none;margin:0}
+        button,.tile{font:inherit;color:var(--primary-text-color);text-align:left;border:1px solid transparent;border-radius:10px;background:var(--compact-control-surface);cursor:pointer;touch-action:manipulation;min-width:0}
+        button:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
+        .alert{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 10px;font-size:13px;font-weight:500}
+        .alert span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .alert[data-level=warning],.tile[data-level=warning]{border-color:color-mix(in srgb,var(--warning-color,#ffa600) 35%,transparent);background:color-mix(in srgb,var(--warning-color,#ffa600) 6%,transparent)}
+        .alert[data-level=critical],.tile[data-level=critical]{border-color:color-mix(in srgb,var(--error-color,#db4437) 35%,transparent);background:color-mix(in srgb,var(--error-color,#db4437) 6%,transparent)}
+        .tile[data-level=critical]{border-width:2px;padding:7px 9px}
+        .alert[data-level=warning] ha-icon,.tile[data-level=warning] .icon{color:var(--warning-color,#ffa600)}
+        .alert[data-level=critical] ha-icon,.tile[data-level=critical] .icon{color:var(--error-color,#db4437)}
+        .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+        :host([columns="3"]) .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+        :host([columns="4"]) .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+        @container(min-width:421px){:host([columns=auto]) .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @container(min-width:700px){:host([columns=auto]) .grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+        .tile{display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:64px;padding:8px 10px}
+        .tile[data-offline]{opacity:.6}
+        .head{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--secondary-text-color);min-width:0}
+        .head span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        ha-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none}
+        .icon{display:inline-flex;color:var(--secondary-text-color)}
+        .tile[data-active] .icon{color:var(--tile-color,var(--primary-color))}
+        .main{font-size:19px;font-weight:600;letter-spacing:-.4px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .main small{font-size:13px;font-weight:400;letter-spacing:0;color:var(--secondary-text-color);margin-left:3px}
+        .sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
+        @container(max-width:360px){.sub{display:none}.tile{padding:8px}}
+        @media(pointer:coarse){.tile,.alert{min-height:64px}.alert{min-height:44px}}
+        @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+      </style><ha-card><header hidden><h2></h2><span class="badge" hidden></span></header><div class="alerts"></div><div class="grid"></div></ha-card>`;
+    }
+
+    setConfig(config) {
+      if (!config || !Array.isArray(config.tiles) || !config.tiles.length) throw new Error('tiles 목록이 필요합니다.');
+      if (config.columns !== undefined && !['auto', 2, 3, 4].includes(config.columns)) throw new Error('columns는 auto, 2, 3, 4 중 하나여야 합니다.');
+      if (config.alerts !== undefined && !Array.isArray(config.alerts)) throw new Error('alerts는 목록이어야 합니다.');
+      (config.alerts || []).forEach((alert, i) => {
+        const fail = m => { throw new Error(`alerts[${i}]: ${m}`); };
+        if (!alert || typeof alert.entity !== 'string' || !ID.test(alert.entity)) fail('entity가 필요합니다.');
+        if (!alert.when) fail('when이 필요합니다.');
+        validateRule(alert.when, 'when', fail);
+        if (alert.level !== undefined && !LEVELS[alert.level]) fail('level은 warning 또는 critical이어야 합니다.');
+        if (alert.navigation_path !== undefined && !safePath(alert.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
+      });
+      config.tiles.forEach((tile, i) => {
+        const fail = m => { throw new Error(`tiles[${i}]: ${m}`); };
+        if (!tile || typeof tile !== 'object') fail('타일은 객체여야 합니다.');
+        if (!TILE_TYPES.includes(tile.type)) fail(`type은 ${TILE_TYPES.join(', ')} 중 하나여야 합니다.`);
+        if (typeof tile.name !== 'string' || !tile.name) fail('name이 필요합니다.');
+        if (tile.navigation_path !== undefined && !safePath(tile.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
+        if (tile.type === 'count' || tile.type === 'climate') entityList(tile.entities, 'entities', fail);
+        if (tile.type === 'climate' && tile.value_entity !== undefined && !ID.test(tile.value_entity)) fail('value_entity가 올바르지 않습니다.');
+        if (tile.type === 'value') {
+          if (typeof tile.entity !== 'string' || !ID.test(tile.entity)) fail('entity가 필요합니다.');
+          if (tile.secondary_entity !== undefined && !ID.test(tile.secondary_entity)) fail('secondary_entity가 올바르지 않습니다.');
+          validateThresholds(tile.thresholds, 'tiles', fail);
+        }
+        if (tile.type === 'status') {
+          itemList(tile.items, 'items', fail);
+          tile.items.forEach(item => { if (item.active !== undefined && !Array.isArray(item.active)) fail('items[].active는 목록이어야 합니다.'); });
+        }
+        if (tile.type === 'health') {
+          itemList(tile.items, 'items', fail);
+          tile.items.forEach(item => {
+            validateRule(item.problem, 'items[].problem', fail);
+            validateThresholds(item.thresholds, 'items[]', fail);
+            if (item.problem === undefined && item.thresholds === undefined) fail('items[]에는 problem 또는 thresholds가 필요합니다. 카드는 정상 기준을 추측하지 않습니다.');
+            if (item.level !== undefined && !LEVELS[item.level]) fail('items[].level은 warning 또는 critical이어야 합니다.');
+          });
+        }
+      });
+      const key = JSON.stringify(config);
+      if (this._configKey === key) return;
+      this._configKey = key; this._config = config;
+      this.setAttribute('columns', config.columns ?? 'auto');
+      this._build(); this._render();
+    }
+    set hass(hass) { this._hass = hass; this._render(); }
+    getCardSize() { return Math.max(1, Math.ceil((this._config?.tiles.length || 1) / 2) * 1 + 1); }
+    getGridOptions() { return { columns: 12, min_columns: 6 }; }
+    static getStubConfig(hass) {
+      const light = Object.keys(hass?.states || {}).filter(id => id.startsWith('light.')).slice(0, 3);
+      return { name: '우리집', tiles: [{ type: 'count', name: '조명', icon: 'mdi:lightbulb-group', entities: light.length ? light : ['light.living_room'] }] };
+    }
+
+    _more(id) {
+      if (id && this._hass?.states[id]) this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: id }, bubbles: true, composed: true }));
+    }
+    _go(path) {
+      if (!safePath(path)) return;
+      history.pushState({ from: location.pathname }, '', path);
+      window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } }));
+    }
+    _open(path, entityId) { if (path) this._go(path); else this._more(entityId); }
+    _firstEntity(tile) { return tile.entity ?? tile.entities?.[0] ?? tile.items?.[0]?.entity; }
+
+    _build() {
+      const root = this.shadowRoot;
+      this._alerts = [];
+      root.querySelector('.alerts').replaceChildren();
+      const grid = root.querySelector('.grid'); grid.replaceChildren(); this._tiles = [];
+      const header = root.querySelector('header');
+      text(root.querySelector('h2'), this._config.name || '');
+      for (const tile of this._config.tiles) {
+        const interactive = Boolean(tile.navigation_path || this._firstEntity(tile));
+        const el = document.createElement(interactive ? 'button' : 'div'); el.className = 'tile';
+        if (interactive) el.onclick = () => this._open(tile.navigation_path, this._firstEntity(tile));
+        const head = document.createElement('div'); head.className = 'head';
+        const iconWrap = document.createElement('span'); iconWrap.className = 'icon';
+        const icon = document.createElement('ha-icon'); iconWrap.append(icon);
+        const label = document.createElement('span'); label.textContent = tile.name;
+        head.append(iconWrap, label);
+        const main = document.createElement('div'); main.className = 'main';
+        const sub = document.createElement('div'); sub.className = 'sub';
+        el.append(head, main, sub); grid.append(el);
+        this._tiles.push({ tile, el, icon, main, sub });
+      }
+      header.hidden = !this._config.name && !(this._config.alerts || []).length;
+    }
+
+    _format(state) {
+      if (unusable(state)) return '확인 불가';
+      return this._hass.formatEntityState?.(state) ?? `${state.state} ${state.attributes.unit_of_measurement || ''}`.trim();
+    }
+    _split(state) {
+      const formatted = this._format(state), unit = state?.attributes?.unit_of_measurement || '';
+      if (unit && formatted.endsWith(unit)) return { number: formatted.slice(0, -unit.length).trimEnd(), unit };
+      return { number: formatted, unit: '' };
+    }
+
+    // Each summary returns { number, unit, label, sub, level, active, offline, count }.
+    _summarise(tile) {
+      const states = id => this._hass.states[id];
+      if (tile.type === 'count') {
+        const all = tile.entities.map(states), usable = all.filter(s => !unusable(s));
+        if (!usable.length) return { number: '—', label: '확인 불가', offline: true };
+        const on = usable.filter(s => s.state === 'on').length, down = all.length - usable.length;
+        return { number: `${on}/${usable.length}`, label: '켜짐', sub: down ? `${down}개 확인 불가` : '', active: on > 0 };
+      }
+      if (tile.type === 'climate') {
+        const all = tile.entities.map(states), usable = all.filter(s => !unusable(s));
+        if (!usable.length) return { number: '—', label: '확인 불가', offline: true };
+        const running = usable.filter(s => s.state !== 'off' && (s.attributes.hvac_action === undefined || !['idle', 'off'].includes(s.attributes.hvac_action))).length;
+        const temp = tile.value_entity ? states(tile.value_entity) : undefined;
+        const down = all.length - usable.length;
+        return {
+          number: running ? `${running}대` : '꺼짐', label: running ? '가동' : '',
+          sub: [temp && !unusable(temp) ? this._format(temp) : '', down ? `${down}대 확인 불가` : ''].filter(Boolean).join(' · '), active: running > 0,
+        };
+      }
+      if (tile.type === 'status') {
+        const all = tile.items.map(item => ({ item, state: states(item.entity) }));
+        if (all.every(r => unusable(r.state))) return { number: '—', label: '확인 불가', offline: true };
+        const active = all.filter(r => !unusable(r.state) && (r.item.active || ['running']).includes(r.state.state));
+        if (!active.length) return { number: tile.idle_text || '모두 대기', sub: all.some(r => unusable(r.state)) ? `${all.filter(r => unusable(r.state)).length}개 확인 불가` : '' };
+        const first = active[0], remaining = first.item.remaining ? states(first.item.remaining) : undefined;
+        const detail = remaining && !unusable(remaining) ? this._format(remaining) : '';
+        return {
+          number: active.length > 1 ? `${active.length}대` : (first.item.name || first.state.attributes.friendly_name || first.item.entity), label: active.length > 1 ? '동작 중' : '동작 중',
+          sub: [active.length > 1 ? first.item.name : '', detail].filter(Boolean).join(' · '), active: true,
+        };
+      }
+      if (tile.type === 'value') {
+        const state = states(tile.entity);
+        if (unusable(state)) return { number: '—', label: '확인 불가', offline: true };
+        const { number, unit } = this._split(state), second = tile.secondary_entity ? states(tile.secondary_entity) : undefined;
+        const level = thresholdLevel(state, tile.thresholds);
+        return { number, unit, sub: second && !unusable(second) ? this._format(second) : '', level, active: false };
+      }
+      // health: worst configured level wins. Unavailable items are reported, never treated as healthy.
+      const results = tile.items.map(item => {
+        const state = states(item.entity);
+        if (unusable(state)) return { down: true };
+        let level = '';
+        if (item.problem && matches(state, item.problem)) level = item.level || 'critical';
+        level = worse(level, thresholdLevel(state, item.thresholds));
+        return { level };
+      });
+      const down = results.filter(r => r.down).length, known = results.filter(r => !r.down);
+      if (!known.length) return { number: '—', label: '확인 불가', offline: true };
+      const level = known.reduce((acc, r) => worse(acc, r.level), '');
+      const count = known.filter(r => r.level === level).length;
+      const sub = down ? `${down}개 확인 불가` : '';
+      if (!level) return { number: '이상 없음', sub };
+      return { number: `${count}건`, label: level === 'critical' ? '위험' : '주의', sub, level };
+    }
+
+    _render() {
+      if (!this._hass || !this._config) return;
+      let unavailableAlerts = 0;
+      const hits = [];
+      for (const alert of this._config.alerts || []) {
+        const state = this._hass.states[alert.entity];
+        if (unusable(state)) { unavailableAlerts++; continue; }
+        if (matches(state, alert.when)) hits.push({ alert, state });
+      }
+      hits.sort((a, b) => (LEVELS[b.alert.level || 'warning']) - (LEVELS[a.alert.level || 'warning']));
+      this._renderAlerts(hits);
+      const badge = this.shadowRoot.querySelector('.badge'), header = this.shadowRoot.querySelector('header');
+      const hasAlerts = Boolean((this._config.alerts || []).length);
+      badge.hidden = !hasAlerts;
+      if (hasAlerts) text(badge, hits.length ? `${hits.length}건 확인 필요` : unavailableAlerts ? `${unavailableAlerts}개 확인 불가` : '✓ 이상 없음');
+      header.hidden = !this._config.name && !hasAlerts;
+
+      for (const ref of this._tiles) {
+        const s = this._summarise(ref.tile);
+        const level = s.level || '';
+        attr(ref.el, 'data-level', level);
+        if (s.active) attr(ref.el, 'data-active', ''); else ref.el.removeAttribute('data-active');
+        if (s.offline) attr(ref.el, 'data-offline', ''); else ref.el.removeAttribute('data-offline');
+        const icon = level === 'critical' ? 'mdi:alert-circle' : level === 'warning' ? 'mdi:alert' : (s.offline ? 'mdi:help-circle-outline' : (ref.tile.icon || 'mdi:circle-outline'));
+        if (ref.icon.icon !== icon) ref.icon.icon = icon;
+        ref.main.replaceChildren();
+        const prefix = level === 'critical' ? '위험 · ' : level === 'warning' ? '주의 · ' : '';
+        ref.main.append(document.createTextNode(prefix + (s.number ?? '')));
+        const small = [s.unit, s.label].filter(Boolean).join(' ');
+        if (small) { const el = document.createElement('small'); el.textContent = small; ref.main.append(el); }
+        text(ref.sub, s.sub || '');
+        const summary = [ref.tile.name, prefix + (s.number ?? ''), small, s.sub].filter(Boolean).join(' ');
+        attr(ref.el, 'title', summary);
+        if (ref.el.localName === 'button') attr(ref.el, 'aria-label', summary);
+      }
+    }
+
+    _renderAlerts(hits) {
+      const box = this.shadowRoot.querySelector('.alerts');
+      const key = hits.map(h => `${h.alert.entity}|${h.alert.level || 'warning'}`).join(',');
+      if (this._alertKey !== key) {
+        this._alertKey = key; box.replaceChildren();
+        for (const { alert } of hits) {
+          const level = alert.level || 'warning';
+          const btn = document.createElement('button'); btn.className = 'alert'; btn.dataset.level = level;
+          const icon = document.createElement('ha-icon'); icon.icon = level === 'critical' ? 'mdi:alert-circle' : 'mdi:alert';
+          const label = document.createElement('span');
+          const name = alert.name || this._hass.states[alert.entity]?.attributes.friendly_name || alert.entity;
+          label.textContent = `${level === 'critical' ? '위험' : '주의'} · ${name}`;
+          btn.title = label.textContent; btn.setAttribute('aria-label', label.textContent);
+          btn.append(icon, label);
+          btn.onclick = () => this._open(alert.navigation_path, alert.entity);
+          box.append(btn);
+        }
+      }
+    }
+  }
+
+  if (!customElements.get('compact-overview-card')) customElements.define('compact-overview-card', CompactOverviewCard);
+  window.customCards = window.customCards || [];
+  if (!window.customCards.some(c => c.type === 'compact-overview-card')) {
+    window.customCards.push({ type: 'compact-overview-card', name: 'Compact overview card', description: '카테고리별 요약 타일과 이상 알림' });
+  }
+})();
