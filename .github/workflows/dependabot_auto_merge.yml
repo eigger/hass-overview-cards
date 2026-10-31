@@ -1,0 +1,17 @@
+name: Dependabot auto-merge
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, closed]
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auto-merge:
+    permissions:
+      contents: write
+      pull-requests: write
+    # Reviewed workflow from standards v1.1.4; this does not enroll the repository
+    # in the integration standards profile or its automatic standards updates.
+    uses: eigger/hass-repo-standards/.github/workflows/dependabot-auto-merge.yml@a90531d05613597632a4c10c11ce1dbc45e0bab6
