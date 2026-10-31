@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-![알림과 직접 조작이 되는 탭 단위 섹션을 보여주는 오버뷰](images/overview-card-ko.jpg)
+![알림과 빠른 조작 칩이 있는 그룹을 보여주는 오버뷰](images/overview-card-ko.jpg)
 
 *실제 카드 JavaScript와 모의 상태로 렌더링했습니다. 로컬 미리보기이며 실제 기기 검증이 아닙니다.*
 
@@ -17,15 +17,15 @@
 
 </details>
 
-익숙한 오버뷰 구성을 유지하는 카드입니다. **그룹(기본은 탭 단위, 방 단위도 가능)의 헤더에 요약을 보여주고 그 아래에 실제 조작 행을 그대로** 두며, 확인이 필요한 항목은 **알림 띠**로 보여줍니다. 조작 행은 [Compact Cards](https://github.com/eigger/hass-compact-cards)의 `compact-home-panel`이라서 오버뷰에서 바로 조명을 켜고 끄고, 냉난방을 조절하고, 센서 상세를 열 수 있습니다.
+한눈에 훑기 쉽고 바로 조작할 수 있는 대시보드 오버뷰입니다. **그룹**(기본은 탭 단위, 방 단위도 가능)마다 헤더에 굵은 **상태 요약**을 보여주고 아래에 **빠른 조작 칩**을 둡니다. 조명은 눌러서 켜고 끄고, 냉난방은 −/+로 조절하고, 센서는 눌러서 상세를 봅니다. 그룹 제목을 누르면 세부 내용이 있는 탭으로 이동합니다. 맨 위 **알림 띠**는 확인이 필요한 항목만 보여주고, 이상이 없으면 공간을 차지하지 않습니다.
 
-`custom:compact-overview-card` · JavaScript 한 파일 · 섹션은 Compact Cards의 `compact-cards.js`가 필요합니다(요약 타일은 불필요)
+`custom:compact-overview-card` · JavaScript 한 파일 · 다른 카드가 필요 없음(기존 `compact-home-panel` 행은 `items`로 함께 넣을 수 있음)
 
 [카드 가이드](docs/compact-overview-card.md) · [쇼케이스](docs/showcase.md) · [쇼케이스 설정](examples/showcase.yaml) · [기준 문서](STANDARDS.md)
 
 ## 설치
 
-`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 JavaScript 모듈로 등록합니다 (`/local/compact-overview-card.js`). 섹션은 `compact-home-panel`을 사용하므로 [Compact Cards](https://github.com/eigger/hass-compact-cards)도 설치하고 리소스를 등록해야 합니다. HACS 사용 시 Custom repositories에 이 저장소를 **Dashboard**로 추가합니다.
+`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 JavaScript 모듈로 등록합니다 (`/local/compact-overview-card.js`). 칩은 다른 카드가 필요 없습니다. `items`로 `compact-home-panel` 행을 함께 넣는 경우에만 [Compact Cards](https://github.com/eigger/hass-compact-cards)도 설치하세요. HACS 사용 시 Custom repositories에 이 저장소를 **Dashboard**로 추가합니다.
 
 ## 예제
 
@@ -41,42 +41,52 @@ alerts:                  # 조건이 맞을 때만 표시, 없으면 높이 0
 sections:
   - name: 조명
     icon: mdi:lightbulb-group
-    navigation_path: /lovelace/rooms      # 섹션 제목을 누르면 해당 탭으로 이동
-    columns: 2                            # 조작 행의 열 수: auto | 1 | 2
-    summary:                              # 헤더의 한 줄 요약(타일과 같은 옵션)
+    navigation_path: /lovelace/rooms      # 그룹 제목을 누르면 해당 탭으로 이동
+    summary:                              # 헤더의 굵은 상태 요약(타일과 같은 옵션)
       type: count
       entities: [light.living, light.bedroom, switch.kitchen]
     badges:                               # 요약 옆에 표시할 센서 값
       - { entity: sensor.living_illuminance, name: 거실 조도 }
-    items:                                # compact-home-panel 항목을 그대로 사용
-      - { entity: light.living, name: 거실, tap_action: { action: toggle } }
-      - { entity: light.bedroom, name: 침실, tap_action: { action: toggle } }
-      - { entity: switch.kitchen, name: 주방, tap_action: { action: toggle } }
+    controls:                             # 빠른 조작 칩
+      - { entity: light.living, name: 거실 }
+      - { entity: light.bedroom, name: 침실 }
+      - { entity: switch.kitchen, name: 주방 }
   - name: 냉난방
     icon: mdi:thermostat
     navigation_path: /lovelace/rooms
     summary: { type: climate, entities: [climate.living_heater, climate.living_ac], value_entity: sensor.living_temperature }
-    items:
-      - { type: climate, entity: climate.living_heater, name: 거실 보일러 }
-      - { type: climate, entity: climate.living_ac, name: 거실 에어컨 }
+    controls:
+      - { entity: climate.living_heater, name: 거실 보일러 }   # −/+와 전원 버튼 내장
+      - { entity: climate.living_ac, name: 거실 에어컨 }
 ```
 
-조작 없이 한눈에 보는 요약만 원하면 `sections` 대신 `tiles`를 사용합니다. [가이드](docs/compact-overview-card.md)를 참고하세요.
+조작 없는 요약 격자만 원하면 `sections` 대신 `tiles`를 사용합니다. [가이드](docs/compact-overview-card.md)를 참고하세요.
 
-## 섹션
+## 그룹 (`sections`)
 
 | 옵션 | 필수 | 설명 |
 | --- | --- | --- |
-| `name` | 예 | 섹션 제목. `navigation_path`가 있으면 제목이 해당 로컬 경로로 이동하는 버튼이 됩니다 |
-| `items` | 예 | `compact-home-panel` 항목(토글, 센서, `type: climate`/`light`/`cover`/`media`, 비교, 이동 등)을 [그 카드](https://github.com/eigger/hass-compact-cards/blob/main/docs/compact-home-panel.md)와 똑같이 사용 |
+| `name` | 예 | 그룹 제목. `navigation_path`가 있으면 제목이 해당 로컬 경로로 이동하는 버튼이 됩니다 |
+| `controls` | 예* | 빠른 조작 칩(아래) |
+| `items` | 예* | 칩 아래에 표시할 `compact-home-panel` 행(Compact Cards 필요). `*` `controls`/`items` 중 하나 이상 |
 | `icon`, `navigation_path` | 아니요 | 제목 아이콘, 로컬 경로 |
-| `columns` | 아니요 | 조작 행의 열 수: `auto`(기본), `1`, `2` |
-| `summary` | 아니요 | `name` 없는 타일 사양(`count`, `climate`, `status`, `value`, `health`). 헤더 오른쪽에 수준 색상으로 표시 |
+| `summary` | 아니요 | `name` 없는 타일 사양(`count`, `climate`, `status`, `value`, `health`). 헤더에 굵게, 수준 색상으로 표시 |
 | `badges` | 아니요 | `[{ entity, name }]` 요약 옆 센서 값. 누르면 상세 정보 |
 
-최상위 `section_columns`(`auto`, `1`, `2`, `3`)는 섹션을 나눌 열 수입니다. `auto`는 카드 너비 640px부터 2열, 960px부터 3열입니다. 잘못된 `items`는 해당 섹션 안에 오류로 표시되고 다른 섹션에는 영향을 주지 않습니다.
+최상위 `section_columns`(`auto`, `1`, `2`, `3`)는 그룹 열 수입니다. `auto`는 320px 이상 폭의 그룹을 가로로 채우고 행 단위로 정렬해 높이를 맞추며, 모바일에서는 1열입니다. PC에서 전체 폭을 쓰려면 Home Assistant 섹션 뷰에서 이 카드가 들어간 섹션에 `column_span`(예: `3`)을 지정하세요.
 
-## 요약 타일 유형 (`tiles`, 섹션의 `summary`)
+### 빠른 조작 칩
+
+| 엔티티 | 칩 | 누르면 |
+| --- | --- | --- |
+| `light`, `switch`, `fan`, `input_boolean`, `humidifier`, `automation` | 상태 색상이 있는 토글 | 켜기/끄기 |
+| `climate` | 전체 폭 칩. − / + 목표 온도(마지막 탭 뒤 한 번만 요청, 최소/최대 범위로 제한)와 전원 버튼 | 상세 정보 |
+| `button`, `input_button`, `script`, `scene` | 실행 | 누름 / 실행 |
+| 그 외(센서, 잠금, 커튼 등) | 값 표시 | 상세 정보 |
+
+칩 옵션: `entity`(필수), `name`, `icon`, `type`(`toggle`, `action`, `readout`, `climate`로 덮어쓰기), `tap_action`(`toggle`, `more-info`, `navigate`+`navigation_path`, `perform-action`+`perform_action`, 선택 `target`·`data`·`confirmation: { text }`). `unavailable` 엔티티는 흐리게 표시하고 서비스를 보내지 않으며 상세 정보는 열 수 있습니다.
+
+## 요약 타일 유형 (`tiles`, 그룹의 `summary`)
 
 | type | 필수 | 표시 |
 | --- | --- | --- |
@@ -100,7 +110,7 @@ sections:
 
 ## 원칙
 
-- 카드 자체는 서비스를 호출하지 않습니다. 섹션의 조작은 설정한 `compact-home-panel` 행이 수행합니다.
+- 서비스는 설정한 칩을 눌렀을 때만 호출하며 자동으로 호출하지 않습니다. `unavailable` 엔티티에는 명령을 보내지 않고, 요청 중 중복 탭은 막습니다.
 - 정상/위험 기준은 카드가 추측하지 않습니다. `thresholds`, `problem`, `alerts.when`에 사용자가 쓴 규칙만 적용합니다.
 - 상태는 색 + `주의 ·`/`위험 ·` 문구 + 아이콘 변화로 함께 전달합니다.
 - 일부 엔티티가 `unavailable`이면 분모에서 빼고 `N개 확인 불가`로 따로 표시하며, 정상으로 간주하지 않습니다.

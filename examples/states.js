@@ -68,32 +68,32 @@
       { entity: 'lock.gas_valve', name: '가스 밸브 열림', when: { state: 'unlocked' }, level: 'warning' },
     ],
     sections: [
-      { name: '조명', icon: 'mdi:lightbulb-group', navigation_path: '/lovelace/rooms', columns: 2,
+      { name: '조명', icon: 'mdi:lightbulb-group', navigation_path: '/lovelace/rooms',
         summary: { type: 'count', entities: lights }, badges: [{ entity: 'sensor.illuminance', name: '거실 조도' }],
-        items: lights.map((id, i) => toggle(id, lightNames[i])) },
-      { name: '냉난방', icon: 'mdi:thermostat', navigation_path: '/lovelace/rooms', columns: 2,
+        controls: lights.map((id, i) => toggle(id, lightNames[i])) },
+      { name: '냉난방', icon: 'mdi:thermostat', navigation_path: '/lovelace/rooms',
         summary: { type: 'climate', entities: ['climate.living_heater', 'climate.bedroom_heater', 'climate.living_ac', 'climate.bedroom_ac'], value_entity: 'sensor.living_temperature' },
         badges: [{ entity: 'sensor.living_temperature', name: '거실' }, { entity: 'sensor.bedroom_temperature', name: '안방' }],
-        items: [{ type: 'climate', entity: 'climate.living_heater', name: '거실 보일러' }, { type: 'climate', entity: 'climate.bedroom_heater', name: '안방 보일러' }, { type: 'climate', entity: 'climate.living_ac', name: '거실 에어컨' }, { type: 'climate', entity: 'climate.bedroom_ac', name: '안방 에어컨' }] },
-      { name: '공기', icon: 'mdi:air-filter', navigation_path: '/lovelace/air', columns: 2,
+        controls: [{ type: 'climate', entity: 'climate.living_heater', name: '거실 보일러' }, { type: 'climate', entity: 'climate.bedroom_heater', name: '안방 보일러' }, { type: 'climate', entity: 'climate.living_ac', name: '거실 에어컨' }, { type: 'climate', entity: 'climate.bedroom_ac', name: '안방 에어컨' }] },
+      { name: '공기', icon: 'mdi:air-filter', navigation_path: '/lovelace/air',
         summary: { type: 'value', entity: 'sensor.pm2_5', thresholds: [{ value: 36, direction: 'above', level: 'warning' }, { value: 76, direction: 'above', level: 'critical' }] },
-        items: [toggle('switch.purifier', '공기청정기'), toggle('switch.dehumidifier', '제습기'), info('sensor.pm2_5', '거실 PM2.5'), info('sensor.humidity', '거실 습도')] },
-      { name: '가전', icon: 'mdi:washing-machine', navigation_path: '/lovelace/appliances', columns: 1,
+        controls: [toggle('switch.purifier', '공기청정기'), toggle('switch.dehumidifier', '제습기'), info('sensor.pm2_5', '거실 PM2.5'), info('sensor.humidity', '거실 습도')] },
+      { name: '가전', icon: 'mdi:washing-machine', navigation_path: '/lovelace/appliances',
         summary: { type: 'status', idle_text: '모두 대기', items: [
           { entity: 'sensor.washer_state', name: '세탁', active: ['running'], remaining: 'sensor.washer_remaining' },
           { entity: 'sensor.dryer_state', name: '건조', active: ['running'] },
           { entity: 'sensor.dishwasher_state', name: '식세기', active: ['running'] },
         ] },
-        items: [info('sensor.washer_state', '세탁기'), info('sensor.dryer_state', '건조기'), info('sensor.dishwasher_state', '식기세척기')] },
-      { name: '에너지', icon: 'mdi:flash', navigation_path: '/lovelace/manage', columns: 2,
+        controls: [info('sensor.washer_state', '세탁기'), info('sensor.dryer_state', '건조기'), info('sensor.dishwasher_state', '식기세척기')] },
+      { name: '에너지', icon: 'mdi:flash', navigation_path: '/lovelace/manage',
         summary: { type: 'value', entity: 'sensor.power', secondary_entity: 'sensor.bill' },
-        items: [info('sensor.power', '현재 전력'), info('sensor.bill', '예상 전기요금'), info('sensor.gas_month', '이번 달 가스'), info('sensor.water_month', '이번 달 수도')] },
-      { name: '서버', icon: 'mdi:server', navigation_path: '/lovelace/proxmox', columns: 2,
+        controls: [info('sensor.power', '현재 전력'), info('sensor.bill', '예상 전기요금'), info('sensor.gas_month', '이번 달 가스'), info('sensor.water_month', '이번 달 수도')] },
+      { name: '서버', icon: 'mdi:server', navigation_path: '/lovelace/proxmox',
         summary: { type: 'health', items: [
           { entity: 'sensor.ssd_smart', problem: { state_not: 'PASSED' }, level: 'critical' },
           { entity: 'sensor.cpu_temp', thresholds: [{ value: 75, direction: 'above', level: 'warning' }] },
         ] },
-        items: [info('sensor.ssd_smart', 'SSD SMART'), info('sensor.ssd_temp', 'SSD 온도'), info('sensor.cpu_usage', 'CPU 사용률'), info('sensor.memory_usage', '메모리 사용률'), info('sensor.cpu_temp', 'CPU 온도')] },
+        controls: [info('sensor.ssd_smart', 'SSD SMART'), info('sensor.ssd_temp', 'SSD 온도'), info('sensor.cpu_usage', 'CPU 사용률'), info('sensor.memory_usage', '메모리 사용률'), info('sensor.cpu_temp', 'CPU 온도')] },
     ],
   });
   // Scenarios change mocked states only, never the card.
@@ -107,5 +107,16 @@
     const named = { on: '켜짐', off: '꺼짐', locked: '잠김', unlocked: '열림' }[s.state];
     return named ?? (unit ? `${s.state} ${unit}` : s.state);
   };
-  window.overviewPreview = { states, config: sectionsConfig, sectionsConfig, tilesConfig, scenarios, format };
+  // Mock service layer shared by the previews: only changes in-memory state.
+  const mockService = (hass, refresh) => async (domain, service, data, target) => {
+    const id = data?.entity_id || target?.entity_id, s = hass.states[id];
+    if (s) {
+      if (service === 'toggle') s.state = s.state === 'on' ? 'off' : 'on';
+      if (domain === 'climate' && service === 'set_temperature') s.attributes.temperature = data.temperature;
+      if (domain === 'climate' && service === 'turn_off') { s.state = 'off'; s.attributes.hvac_action = 'off'; }
+      if (domain === 'climate' && service === 'turn_on') { s.state = 'heat'; s.attributes.hvac_action = 'heating'; }
+    }
+    setTimeout(refresh, 150);
+  };
+  window.overviewPreview = { mockService, states, config: sectionsConfig, sectionsConfig, tilesConfig, scenarios, format };
 })();

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Regenerates images/*.jpg from examples/preview.html and examples/showcase.html with headless Chrome.
-# Needs: Google Chrome, python3, macOS sips, and vendor/compact-cards.js (scripts/fetch-vendor.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
@@ -23,7 +22,7 @@ for lang in en ko; do
   shot "overview-card$suffix" 1136,700 "$BASE/preview.html?scenario=alert&width=1120&capture=true$q"
   shot "overview-card-clear$suffix" 1136,640 "$BASE/preview.html?scenario=normal&width=1120&capture=true$q"
   shot "overview-card-dark$suffix" 1136,700 "$BASE/preview.html?scenario=alert&width=1120&theme=dark&capture=true$q"
-  mobile "overview-card-mobile$suffix" "preview.html?scenario=alert&width=390&capture=true$q" 1470
+  mobile "overview-card-mobile$suffix" "preview.html?scenario=alert&width=390&capture=true$q" 1650
   shot "overview-tiles$suffix" 422,432 "$BASE/preview.html?variant=tiles&scenario=alert&capture=true$q"
   shot "overview-tiles-clear$suffix" 422,336 "$BASE/preview.html?variant=tiles&scenario=normal&capture=true$q"
   shot "overview-tiles-offline$suffix" 422,336 "$BASE/preview.html?variant=tiles&scenario=offline&capture=true$q"

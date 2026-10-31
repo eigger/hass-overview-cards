@@ -19,7 +19,7 @@ customElements.define('ha-icon',class extends HTMLElement{
  get icon(){return this.getAttribute('icon');}set icon(value){this.setAttribute('icon',value);}
  update(){const key=(this.getAttribute('icon')||'').replace('mdi:',''),path=window.compactPreviewIcons?.[key];this.shadowRoot.innerHTML='<style>:host{display:inline-flex;align-items:center;justify-content:center}</style>';if(!path)return;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),glyph=document.createElementNS('http://www.w3.org/2000/svg','path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','100%');svg.setAttribute('height','100%');svg.setAttribute('fill','currentColor');glyph.setAttribute('d',path);svg.append(glyph);this.shadowRoot.append(svg);}
 });
-</script><script src="../vendor/compact-cards.js"></script><script src="../compact-overview-card.js"></script><script src="states.js"></script><script>
+</script><script src="../compact-overview-card.js"></script><script src="states.js"></script><script>
 const params=new URLSearchParams(location.search),{translate}=compactPreviewLocale,{states,sectionsConfig,tilesConfig,scenarios,format}=overviewPreview;
 const config=params.get('variant')==='tiles'?tilesConfig:sectionsConfig;
 const toast=document.querySelector('.toast'),main=document.querySelector('main');
@@ -27,7 +27,8 @@ if(['320','390','760','1120'].includes(params.get('width'))){main.style.width=pa
 if(params.get('theme')==='dark')document.body.classList.add('dark');
 if(params.get('capture')==='true')document.body.classList.add('capture');
 const scenario=params.get('scenario')||'normal',initial=states();(scenarios[scenario]||scenarios.normal)(initial);
-const hass={states:translate(initial),formatEntityState:s=>translate(format(s)),callService:async(_d,service,data,_t,target)=>{const id=data?.entity_id||target?.entity_id,s=hass.states[id];if(service==='toggle'&&s)s.state=s.state==='on'?'off':'on';setTimeout(()=>{card.hass={...hass};},150);}};
+const hass={states:translate(initial),formatEntityState:s=>translate(format(s))};
+hass.callService=overviewPreview.mockService(hass,()=>{card.hass={...hass};});
 compactPreviewLocale.start();
 const card=document.createElement('compact-overview-card');card.setConfig(translate(config()));card.hass=hass;main.append(card);
 card.addEventListener('hass-more-info',e=>{toast.textContent=translate('모의 정보')+' · '+e.detail.entityId;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);});

@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-![Overview with alerts and per-tab sections that keep their controls](images/overview-card.jpg)
+![Overview with alerts and groups with quick controls](images/overview-card.jpg)
 
 *Rendered with the actual card JavaScript and mocked states. This is a local preview, not live-device verification.*
 
@@ -19,7 +19,7 @@
 
 An overview page for Home Assistant that keeps the familiar layout: **sections that group controls (by default one section per dashboard tab, or per room if you prefer), each with a summary in the header and the real controls underneath**, plus an **alert strip** for things that need attention. Controls are [Compact Cards](https://github.com/eigger/hass-compact-cards) `compact-home-panel` rows, so lights toggle, climate adjusts and sensors open their details right on the overview.
 
-`custom:compact-overview-card` · one JavaScript file · sections require `compact-cards.js` from Compact Cards (summary tiles do not)
+`custom:compact-overview-card` · one JavaScript file · no other card required (existing `compact-home-panel` rows can still be embedded with `items`)
 
 [Card guide](docs/compact-overview-card.md) · [Showcase](docs/showcase.md) · [Showcase configuration](examples/showcase.yaml) · [Standards reference](STANDARDS.md)
 
@@ -27,7 +27,7 @@ An overview page for Home Assistant that keeps the familiar layout: **sections t
 
 Install through HACS **Custom repositories** (category **Dashboard**), or copy `compact-overview-card.js` to `/config/www/` and register `/local/compact-overview-card.js` as a JavaScript module in dashboard resources. This project is not in the default HACS catalog.
 
-Sections embed `compact-home-panel`, so also install [Compact Cards](https://github.com/eigger/hass-compact-cards) and register its resource. It uses `color-mix` and container queries, so it needs a recent Home Assistant frontend.
+Chips need nothing else. Only if you embed `compact-home-panel` rows with `items`, also install [Compact Cards](https://github.com/eigger/hass-compact-cards). It uses `color-mix` and container queries, so it needs a recent Home Assistant frontend.
 
 ## Example
 
@@ -43,40 +43,50 @@ alerts:                  # shown only while the condition matches; zero height o
 sections:
   - name: Lights
     icon: mdi:lightbulb-group
-    navigation_path: /lovelace/rooms      # tapping the section title opens that tab
-    columns: 2                            # columns of the embedded rows: auto | 1 | 2
-    summary:                              # one-line summary in the header (same options as a tile)
+    navigation_path: /lovelace/rooms      # tapping the group title opens that tab
+    summary:                              # bold status in the header (same options as a tile)
       type: count
       entities: [light.living, light.bedroom, switch.kitchen]
     badges:                               # optional readings next to the summary
       - { entity: sensor.living_illuminance, name: Living lux }
-    items:                                # compact-home-panel items, used as they are
-      - { entity: light.living, name: Living room, tap_action: { action: toggle } }
-      - { entity: light.bedroom, name: Bedroom, tap_action: { action: toggle } }
-      - { entity: switch.kitchen, name: Kitchen, tap_action: { action: toggle } }
+    controls:                             # quick-control chips
+      - { entity: light.living, name: Living room }
+      - { entity: light.bedroom, name: Bedroom }
+      - { entity: switch.kitchen, name: Kitchen }
   - name: Climate
     icon: mdi:thermostat
     navigation_path: /lovelace/rooms
     summary: { type: climate, entities: [climate.living_heater, climate.living_ac], value_entity: sensor.living_temperature }
-    items:
-      - { type: climate, entity: climate.living_heater, name: Living boiler }
-      - { type: climate, entity: climate.living_ac, name: Living AC }
+    controls:
+      - { entity: climate.living_heater, name: Living boiler }   # −/+ and power built in
+      - { entity: climate.living_ac, name: Living AC }
 ```
 
-Prefer a compact at-a-glance view without controls? Use `tiles` instead of `sections`; see [the guide](docs/compact-overview-card.md).
+Prefer a controls-free summary grid? Use `tiles` instead of `sections`; see [the guide](docs/compact-overview-card.md).
 
-## Sections
+## Groups (`sections`)
 
 | Option | Required | Description |
 | --- | --- | --- |
-| `name` | yes | Section title. With `navigation_path` the title is a button that opens that local path |
-| `items` | yes | `compact-home-panel` items (toggles, sensors, `type: climate`/`light`/`cover`/`media`, comparison, navigate…) exactly as in [that card](https://github.com/eigger/hass-compact-cards/blob/main/docs/compact-home-panel.md) |
+| `name` | yes | Group title. With `navigation_path` the title is a button that opens that local path |
+| `controls` | yes* | Quick-control chips (below) |
+| `items` | yes* | Optional `compact-home-panel` rows shown under the chips (needs Compact Cards). `*` at least one of `controls`/`items` |
 | `icon`, `navigation_path` | no | Title icon and local path |
-| `columns` | no | Columns of the embedded rows: `auto` (default), `1` or `2` |
-| `summary` | no | A tile spec without `name` (`count`, `climate`, `status`, `value`, `health`); shown right-aligned in the header, coloured by level |
+| `summary` | no | A tile spec without `name` (`count`, `climate`, `status`, `value`, `health`); shown bold in the header, coloured by level |
 | `badges` | no | `[{ entity, name }]` readings next to the summary; tap opens the entity |
 
-Top-level `section_columns` (`auto`, `1`, `2`, `3`) sets how many columns sections flow into; `auto` uses 2 columns from 640px and 3 from 960px. An invalid `items` entry is reported inside its section and does not break the others.
+Top-level `section_columns` (`auto`, `1`, `2`, `3`) sets the group columns. `auto` fills the width with groups at least 320px wide, aligned in rows so heights match; on mobile it is a single column. Put the card in a section with `column_span` (for example `3`) in Home Assistant's sections view to use the full width on a PC.
+
+### Quick-control chips
+
+| Entity | Chip | Tap |
+| --- | --- | --- |
+| `light`, `switch`, `fan`, `input_boolean`, `humidifier`, `automation` | Toggle with state colour | Toggles |
+| `climate` | Full-width chip with − / + target temperature (one request after the last tap, clamped to min/max) and a power button | Opens details |
+| `button`, `input_button`, `script`, `scene` | Action | Presses / runs |
+| anything else (sensors, locks, covers…) | Readout | Opens details |
+
+Per chip: `entity` (required), `name`, `icon`, `type` (`toggle`, `action`, `readout`, `climate` to override), and `tap_action` (`toggle`, `more-info`, `navigate` with `navigation_path`, or `perform-action` with `perform_action`, optional `target`, `data` and `confirmation: { text }`). Unavailable entities are dimmed and never sent a service call; their details still open.
 
 ## Summary tile types (`tiles`, and `summary` of a section)
 
@@ -102,7 +112,7 @@ Tile options: `name` (required), `icon`, `navigation_path`. Use `tiles` for a co
 ## Principles
 
 - The card never guesses what is normal. Only your `thresholds`, `problem` and `when` rules apply.
-- The card itself never calls services; sections call them only through the embedded `compact-home-panel` rows you configured.
+- Services are called only by chips you configured and only on a tap, never automatically. Unavailable entities are never sent commands, and duplicate taps are blocked while a request is running.
 - Status is conveyed by color, a `주의 ·` / `위험 ·` text prefix and an icon change together.
 - Unavailable entities are counted separately, never treated as healthy.
 - Tile order follows your configuration and never reshuffles with state.

@@ -8,6 +8,7 @@
   const unusable = s => !s || typeof s.state !== 'string' || s.state === 'unknown' || s.state === 'unavailable';
   // Unquoted on/off in YAML 1.1 dashboards arrive as booleans; map them back to HA state strings.
   const stateText = v => (v === true ? 'on' : v === false ? 'off' : String(v));
+  const compactSet = (style, key, value) => { if (style.getPropertyValue(key) !== value) style.setProperty(key, value); };
   const text = (el, value) => { const v = String(value ?? ''); if (el.textContent !== v) el.textContent = v; };
   const attr = (el, key, value) => { const v = String(value); if (el.getAttribute(key) !== v) el.setAttribute(key, v); };
   const safePath = p => typeof p === 'string' && p.startsWith('/') && !p.startsWith('//') && !/[\\\s]/.test(p);
@@ -76,6 +77,25 @@
     }
   }
 
+  const ACTIONS = ['toggle', 'more-info', 'perform-action', 'navigate'];
+  const KINDS = ['toggle', 'action', 'readout', 'climate'];
+  function validateControls(list, fail) {
+    if (!Array.isArray(list) || !list.length) fail('controls에는 항목 목록이 필요합니다.');
+    list.forEach((c, i) => {
+      const bad = m => fail(`controls[${i}]: ${m}`);
+      if (!c || typeof c.entity !== 'string' || !ID.test(c.entity)) bad('entity가 필요합니다.');
+      for (const key of ['name', 'icon']) if (c[key] !== undefined && typeof c[key] !== 'string') bad(`${key}는 문자열이어야 합니다.`);
+      if (c.type !== undefined && !KINDS.includes(c.type)) bad(`type은 ${KINDS.join(', ')} 중 하나여야 합니다.`);
+      if (c.type === 'climate' && !c.entity.startsWith('climate.')) bad('climate 항목에는 climate 엔티티가 필요합니다.');
+      const t = c.tap_action;
+      if (t !== undefined) {
+        if (!t || !ACTIONS.includes(t.action)) bad(`tap_action.action은 ${ACTIONS.join(', ')} 중 하나여야 합니다.`);
+        if (t.action === 'perform-action' && (typeof t.perform_action !== 'string' || !/^[a-z_]+\.[a-z0-9_]+$/.test(t.perform_action))) bad('perform-action에는 domain.service 형식의 perform_action이 필요합니다.');
+        if (t.action === 'navigate' && !safePath(t.navigation_path)) bad('navigate에는 /로 시작하는 로컬 navigation_path가 필요합니다.');
+      }
+    });
+  }
+
   class CompactOverviewCard extends HTMLElement {
     constructor() {
       super();
@@ -119,25 +139,49 @@
         .main small{font-size:13px;font-weight:400;letter-spacing:0;color:var(--secondary-text-color);margin-left:3px}
         .main small:empty{display:none}.sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
         @container(max-width:360px){.sub{display:none}.tile{padding:8px}}
-        .sections{columns:1;column-gap:12px;margin-top:12px}.sections:empty{display:none;margin:0}
+        /* Row-aligned grid: sections in a row share a height, so nothing ends up ragged. */
+        .sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:12px;margin-top:12px;align-items:stretch}.sections:empty{display:none;margin:0}
         :host([data-bare]) .sections{margin-top:0}
-        :host([section-columns="2"]) .sections{columns:2}
-        :host([section-columns="3"]) .sections{columns:3}
-        @container(min-width:640px){:host([section-columns=auto]) .sections{columns:2}}
-        @container(min-width:960px){:host([section-columns=auto]) .sections{columns:3}}
-        /* Sections flow down columns like HA's sections view, so short sections do not leave row gaps. */
-        ha-card.section{display:block;overflow:hidden;box-shadow:none;break-inside:avoid;margin-bottom:12px}
+        :host([section-columns="1"]) .sections{grid-template-columns:minmax(0,1fr)}
+        :host([section-columns="2"]) .sections{grid-template-columns:repeat(2,minmax(0,1fr))}
+        :host([section-columns="3"]) .sections{grid-template-columns:repeat(3,minmax(0,1fr))}
+        @container(max-width:639px){:host([section-columns="2"]) .sections,:host([section-columns="3"]) .sections{grid-template-columns:minmax(0,1fr)}}
+        ha-card.section{display:flex;flex-direction:column;overflow:hidden;box-shadow:none}
         .sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;padding:4px 12px 0}
-        .sec-title{display:flex;align-items:center;gap:8px;flex:1 1 96px;min-width:96px;padding:4px;border:0;border-radius:6px;background:transparent;font-size:14px;font-weight:600;color:var(--primary-text-color)}
+        .sec-title{display:flex;align-items:center;gap:8px;flex:1 1 96px;min-width:96px;padding:4px;border:0;border-radius:6px;background:transparent;text-align:left;font:inherit;font-size:14px;font-weight:600;color:var(--primary-text-color)}
         div.sec-title{cursor:default}
         .sec-title span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .sec-title ha-icon{color:var(--secondary-text-color)}
-        .sec-sum{font-size:13px;color:var(--secondary-text-color);white-space:nowrap;font-variant-numeric:tabular-nums}
+        .sec-sum{font-size:15px;font-weight:600;color:var(--primary-text-color);white-space:nowrap;font-variant-numeric:tabular-nums}.sec-sum:empty{display:none}.sec-sum[data-active]{color:var(--primary-color)}.sec-sum[data-offline]{color:var(--secondary-text-color);font-weight:400}
         .sec-sum[data-level=warning]{color:var(--warning-color,#ffa600)}.sec-sum[data-level=critical]{color:var(--error-color,#db4437);font-weight:600}
         .pill{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:999px;background:var(--compact-control-surface);padding:2px 8px;font-size:12px;min-height:28px;color:var(--primary-text-color)}
         .pill small{color:var(--secondary-text-color);font-size:12px}
         .sec-body compact-home-panel{display:block;--ha-card-background:transparent;--ha-card-border-width:0;--ha-card-box-shadow:none}
         .sec-body .note{font-size:12px;color:var(--secondary-text-color);padding:8px 12px 12px}
+        .controls{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:8px;padding:8px 12px 12px}
+        .controls:empty{display:none}
+        .chip{--chip-color:var(--primary-color);position:relative;display:flex;align-items:center;gap:4px;min-height:52px;min-width:0;border:1px solid transparent;border-radius:12px;background:var(--compact-control-surface);transition:background-color 150ms ease}
+        .chip[data-kind=climate]{grid-column:1/-1;flex-wrap:wrap}
+        .chip[data-kind=climate] .chip-main{flex:1 1 150px}
+        .chip[data-kind=climate] .stepper{margin-left:auto}
+        @container(max-width:339px){.chip[data-kind=climate] .stepper{width:100%;justify-content:flex-end;padding:0 8px 8px}}
+        .chip[data-active]{background:color-mix(in srgb,var(--chip-color) 10%,var(--compact-control-surface))}
+        .chip[data-offline]{opacity:.55}
+        .chip[data-feedback=error]{box-shadow:inset 0 2px var(--error-color,#db4437)}
+        .chip-main{all:unset;box-sizing:border-box;flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:6px 10px;min-height:50px;cursor:pointer;touch-action:manipulation;border-radius:12px}
+        .chip-main:focus-visible,.step:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
+        .chip-main[aria-disabled=true]{cursor:default}
+        .chip-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--primary-text-color) 8%,transparent);color:var(--secondary-text-color)}
+        .chip[data-active] .chip-icon{background:color-mix(in srgb,var(--chip-color) 20%,transparent);color:var(--chip-color)}
+        .chip-text{display:flex;flex-direction:column;min-width:0}
+        .chip-name{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .chip-state{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+        .stepper{display:flex;align-items:center;gap:2px;padding-right:8px;flex:none}
+        .stepper output{min-width:44px;text-align:center;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+        .step{all:unset;box-sizing:border-box;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;font-size:18px;color:var(--primary-text-color);background:color-mix(in srgb,var(--primary-text-color) 6%,transparent);touch-action:manipulation}
+        .step[aria-disabled=true]{opacity:.4;cursor:default}
+        .chip[data-pending] .chip-main{cursor:progress}
+        @media(pointer:coarse){.step{width:44px;height:44px}.chip-main{min-height:56px}}
         @media(pointer:coarse){.tile{min-height:64px}.pill{min-height:36px}}
         @media(prefers-reduced-motion:reduce){*{transition:none!important}}
       </style><ha-card class="shell"><header hidden><h2></h2><span class="badge" role="status" hidden></span></header><div class="alerts" aria-live="polite"></div><div class="grid"></div></ha-card><div class="sections"></div>`;
@@ -166,7 +210,10 @@
         if (section.icon !== undefined && typeof section.icon !== 'string') fail('icon은 문자열이어야 합니다.');
         if (section.navigation_path !== undefined && !safePath(section.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
         if (section.columns !== undefined && !['auto', 1, 2].includes(section.columns)) fail('columns는 auto, 1, 2 중 하나여야 합니다.');
-        if (!Array.isArray(section.items) || !section.items.length || section.items.some(item => !item || typeof item !== 'object' || Array.isArray(item))) fail('items에는 compact-home-panel 항목 목록이 필요합니다.');
+        const hasItems = section.items !== undefined, hasControls = section.controls !== undefined;
+        if (!hasItems && !hasControls) fail('controls 또는 items가 필요합니다.');
+        if (hasItems && (!Array.isArray(section.items) || !section.items.length || section.items.some(item => !item || typeof item !== 'object' || Array.isArray(item)))) fail('items에는 compact-home-panel 항목 목록이 필요합니다.');
+        if (hasControls) validateControls(section.controls, fail);
         if (section.summary !== undefined) {
           if (!section.summary || !TILE_TYPES.includes(section.summary.type)) fail(`summary.type은 ${TILE_TYPES.join(', ')} 중 하나여야 합니다.`);
           validateSpec(section.summary, m => fail(`summary: ${m}`));
@@ -192,7 +239,7 @@
     set hass(hass) { this._hass = hass; this._render(); }
     getCardSize() {
       const sections = this._config?.sections ?? [];
-      const rows = sections.reduce((sum, section) => sum + 1 + section.items.length / 2, 0);
+      const rows = sections.reduce((sum, section) => sum + 1 + ((section.controls?.length ?? 0) + (section.items?.length ?? 0)) / 2, 0);
       return Math.ceil(((this._config?.tiles ?? []).length / 2) + rows / 2) + 1 + (this._alertCount || 0) * 0.5;
     }
     getGridOptions() { return { columns: 12, min_columns: 6 }; }
@@ -241,6 +288,139 @@
       this._buildSections();
     }
 
+    // ---- quick-control chips -------------------------------------------------------------
+    _makeControl(control, box) {
+      const domain = control.entity.split('.')[0];
+      const kind = control.type || (domain === 'climate' ? 'climate'
+        : ['light', 'switch', 'fan', 'input_boolean', 'humidifier', 'automation'].includes(domain) ? 'toggle'
+        : ['button', 'input_button', 'script', 'scene'].includes(domain) ? 'action' : 'readout');
+      const el = document.createElement('div'); el.className = 'chip'; el.dataset.kind = kind;
+      const main = document.createElement('button'); main.className = 'chip-main'; main.type = 'button';
+      const iconWrap = document.createElement('span'); iconWrap.className = 'chip-icon';
+      const icon = document.createElement('ha-state-icon'); icon.setAttribute('aria-hidden', 'true'); iconWrap.append(icon);
+      const textBox = document.createElement('span'); textBox.className = 'chip-text';
+      const name = document.createElement('span'); name.className = 'chip-name';
+      const stateLine = document.createElement('span'); stateLine.className = 'chip-state';
+      textBox.append(name, stateLine); main.append(iconWrap, textBox); el.append(main);
+      const ref = { control, kind, el, main, icon, name, stateLine, domain };
+      main.onclick = () => this._chipTap(ref);
+      if (kind === 'climate') {
+        const stepper = document.createElement('div'); stepper.className = 'stepper';
+        const mk = (label, aria, handler) => { const b = document.createElement('button'); b.className = 'step'; b.type = 'button'; b.textContent = label; b.setAttribute('aria-label', aria); b.onclick = handler; return b; };
+        ref.minus = mk('−', '설정 온도 낮추기', () => this._step(ref, -1));
+        ref.plus = mk('+', '설정 온도 높이기', () => this._step(ref, 1));
+        ref.target = document.createElement('output');
+        ref.power = mk('⏻', '켜기/끄기', () => this._climatePower(ref));
+        stepper.append(ref.minus, ref.target, ref.plus, ref.power); el.append(stepper);
+      }
+      box.append(el);
+      return ref;
+    }
+
+    _chipColor(state) {
+      if (!state || unusable(state)) return 'var(--secondary-text-color)';
+      const domain = state.entity_id.split('.')[0];
+      if (domain === 'light') return 'var(--state-light-active-color,var(--primary-color))';
+      if (domain === 'climate') {
+        const action = state.attributes?.hvac_action ?? state.state;
+        if (['heating', 'heat'].includes(action)) return 'var(--state-climate-heat-color,#ff8100)';
+        if (['cooling', 'cool'].includes(action)) return 'var(--state-climate-cool-color,#2b9af9)';
+        return 'var(--state-climate-active-color,var(--primary-color))';
+      }
+      return `var(--state-${domain}-active-color,var(--state-active-color,var(--primary-color)))`;
+    }
+
+    _renderControl(ref) {
+      const { control, kind } = ref, state = this._hass.states[control.entity], offline = unusable(state);
+      const label = control.name || state?.attributes?.friendly_name || control.entity;
+      const busy = this._busy?.has(control.entity);
+      const active = !offline && (kind === 'climate' ? state.state !== 'off' : kind === 'toggle' ? state.state === 'on' : kind === 'readout' && state.state === 'on');
+      text(ref.name, label);
+      ref.el.toggleAttribute('data-active', active); ref.el.toggleAttribute('data-offline', offline); ref.el.toggleAttribute('data-pending', Boolean(busy));
+      compactSet(ref.el.style, '--chip-color', this._chipColor(state));
+      if (ref.icon.hass !== this._hass) ref.icon.hass = this._hass;
+      if (ref.icon.stateObj !== state) ref.icon.stateObj = state;
+      const iconName = control.icon || (!state ? 'mdi:help-circle-outline' : undefined);
+      if (iconName && ref.icon.icon !== iconName) ref.icon.icon = iconName;
+      let line = this._format(state);
+      if (kind === 'climate' && !offline) {
+        const current = state.attributes?.current_temperature, target = ref.pendingTarget ?? state.attributes?.temperature;
+        line = [this._format(state), current !== undefined ? `${current}°` : ''].filter(Boolean).join(' · ');
+        text(ref.target, target !== undefined && target !== null ? `${target}°` : '—');
+        const range = this._range(state), has = typeof target === 'number';
+        for (const [button, delta] of [[ref.minus, -1], [ref.plus, 1]]) attr(button, 'aria-disabled', !has || (delta < 0 ? target <= range.min : target >= range.max));
+        attr(ref.power, 'aria-disabled', false);
+        attr(ref.power, 'aria-pressed', state.state !== 'off');
+      } else if (kind === 'climate') {
+        text(ref.target, '—'); for (const b of [ref.minus, ref.plus, ref.power]) attr(b, 'aria-disabled', true);
+      }
+      text(ref.stateLine, line);
+      const service = this._defaultAction(ref).action !== 'more-info';
+      attr(ref.main, 'aria-disabled', offline && service);
+      attr(ref.main, 'aria-label', `${label} ${line}`.trim());
+      attr(ref.main, 'title', `${label} ${line}`.trim());
+      if (kind === 'toggle') attr(ref.main, 'aria-pressed', active);
+    }
+
+    _range(state) { return { min: state.attributes?.min_temp ?? 7, max: state.attributes?.max_temp ?? 35, step: state.attributes?.target_temp_step ?? 0.5 }; }
+
+    _defaultAction(ref) {
+      if (ref.control.tap_action) return ref.control.tap_action;
+      if (ref.kind === 'toggle') return { action: 'toggle' };
+      if (ref.kind === 'action') {
+        const perform = { button: 'button.press', input_button: 'input_button.press', script: 'script.turn_on', scene: 'scene.turn_on' }[ref.domain];
+        return perform ? { action: 'perform-action', perform_action: perform } : { action: 'more-info' };
+      }
+      return { action: 'more-info' };
+    }
+
+    _chipTap(ref) {
+      const action = this._defaultAction(ref), id = ref.control.entity, state = this._hass?.states[id];
+      if (action.action === 'more-info') return this._more(id);
+      if (action.action === 'navigate') return this._go(action.navigation_path);
+      if (unusable(state) || this._busy?.has(id)) return undefined;
+      if (action.confirmation && !window.confirm(action.confirmation.text || '실행할까요?')) return undefined;
+      if (action.action === 'toggle') return this._service(ref, 'homeassistant', 'toggle', { entity_id: id });
+      const [domain, service] = action.perform_action.split('.');
+      return this._service(ref, domain, service, action.data || {}, action.target || { entity_id: id });
+    }
+
+    _climatePower(ref) {
+      const state = this._hass?.states[ref.control.entity];
+      if (unusable(state)) return undefined;
+      return this._service(ref, 'climate', state.state === 'off' ? 'turn_on' : 'turn_off', { entity_id: ref.control.entity });
+    }
+
+    _step(ref, direction) {
+      const id = ref.control.entity, state = this._hass?.states[id];
+      if (unusable(state) || state.state === 'off') return;
+      const range = this._range(state), base = ref.pendingTarget ?? state.attributes?.temperature;
+      if (typeof base !== 'number') return;
+      const next = Math.min(range.max, Math.max(range.min, Math.round((base + direction * range.step) / range.step) * range.step));
+      if (next === base) return;
+      ref.pendingTarget = Number(next.toFixed(2)); this._render();
+      // Commit once after the last tap so rapid presses send one request.
+      clearTimeout(ref.stepTimer);
+      ref.stepTimer = setTimeout(async () => {
+        const value = ref.pendingTarget;
+        await this._service(ref, 'climate', 'set_temperature', { entity_id: id, temperature: value });
+        ref.pendingTarget = undefined; this._render();
+      }, 450);
+    }
+
+    async _service(ref, domain, service, data, target) {
+      const id = ref.control.entity;
+      this._busy = this._busy || new Set(); this._busy.add(id); this._render();
+      try {
+        await (target ? this._hass.callService(domain, service, data, target) : this._hass.callService(domain, service, data));
+      } catch (error) {
+        ref.el.dataset.feedback = 'error'; setTimeout(() => { delete ref.el.dataset.feedback; }, 1800);
+        this.dispatchEvent(new CustomEvent('hass-notification', { detail: { message: `변경 실패: ${error?.message || error}` }, bubbles: true, composed: true }));
+      } finally {
+        this._busy.delete(id); this._render();
+      }
+    }
+
     _buildSections() {
       const box = this.shadowRoot.querySelector('.sections'); box.replaceChildren(); this._sections = [];
       for (const section of this._config.sections ?? []) {
@@ -259,9 +439,11 @@
           button.append(label, value); button.onclick = () => this._more(badge.entity); head.append(button);
           return { badge, label, value, button };
         });
+        const controls = document.createElement('div'); controls.className = 'controls';
+        const chips = (section.controls || []).map(control => this._makeControl(control, controls));
         const body = document.createElement('div'); body.className = 'sec-body';
-        card.append(head, body); box.append(card);
-        this._sections.push({ section, card, sum, badges, body });
+        card.append(head, controls, body); box.append(card);
+        this._sections.push({ section, card, sum, badges, body, chips });
       }
     }
 
@@ -269,20 +451,22 @@
       if (!section.summary) return null;
       const s = this._summarise({ ...section.summary, name: section.name });
       const level = s.level || '', prefix = level === 'critical' ? '위험 · ' : level === 'warning' ? '주의 · ' : '';
-      return { level, text: [prefix + (s.number ?? ''), s.unit, s.label].filter(Boolean).join(' ') };
+      return { level, active: Boolean(s.active), offline: Boolean(s.offline), text: [prefix + (s.number ?? ''), s.unit, s.label].filter(Boolean).join(' ') };
     }
 
     _renderSections(summaries) {
       for (const [index, ref] of this._sections.entries()) {
         const summary = summaries[index];
         text(ref.sum, summary?.text ?? ''); attr(ref.sum, 'data-level', summary?.level ?? '');
+        ref.sum.toggleAttribute('data-active', Boolean(summary?.active)); ref.sum.toggleAttribute('data-offline', Boolean(summary?.offline));
+        for (const chip of ref.chips) this._renderControl(chip);
         for (const item of ref.badges) {
           const state = this._hass.states[item.badge.entity];
           text(item.label, item.badge.name || state?.attributes?.friendly_name || item.badge.entity);
           text(item.value, this._format(state));
           attr(item.button, 'title', `${item.label.textContent} ${item.value.textContent}`);
         }
-        if (!ref.panel && !ref.failed) {
+        if (ref.section.items && !ref.panel && !ref.failed) {
           if (!customElements.get('compact-home-panel')) {
             if (!ref.waiting) { ref.waiting = true; customElements.whenDefined('compact-home-panel').then(() => this._render()); }
             const note = ref.body.querySelector('.note') || ref.body.appendChild(Object.assign(document.createElement('div'), { className: 'note' }));

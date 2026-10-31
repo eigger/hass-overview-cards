@@ -15,7 +15,7 @@ Scope and applicability: [STANDARDS.md](STANDARDS.md). This is a card-specific r
 | --- | --- | --- |
 | PASS | Reproducible development install | `npm install` with the committed lockfile; CI uses `npm ci`. |
 | PASS | JavaScript syntax | `npm run check`. |
-| PASS | Card regression suite | `npm test`: 22 passed, 0 failed. Tile summaries, thresholds, unavailable handling, alert lifecycle across `setConfig` and state changes, YAML booleans, navigation, config validation and sections (embedded `compact-home-panel`, header summary, missing-dependency recovery, per-section error isolation). |
+| PASS | Card regression suite | `npm test`: 27 passed, 0 failed. Tile summaries, thresholds, unavailable handling, alert lifecycle, YAML booleans, navigation, config validation, groups with embedded `compact-home-panel`, and quick-control chips (toggle, debounced climate steps with clamping, power, confirmation, offline handling). |
 | PASS | GitHub CI | `Check` succeeded on Ubuntu/Node.js 22 for commits `c6fab62` ([run 41190794025](https://github.com/eigger/hass-overview-cards/actions/runs/41190794025)) and `a722f36` ([run 41191179038](https://github.com/eigger/hass-overview-cards/actions/runs/41191179038)). |
 | PASS | Repository settings | API read-back after configuration: public, squash/rebase merge, auto-merge, branch deletion, read-only default workflow permissions, strict `test` requirement, linear history, no force push or deletion. |
 | PASS | Independent review | A separate Opus review of the card, tests, README and workflows found one high and several medium/low issues. They were fixed and covered by tests in commit `a722f36`; unverified items below remain open. |
@@ -28,6 +28,6 @@ Scope and applicability: [STANDARDS.md](STANDARDS.md). This is a card-specific r
 
 ## Review decisions
 
-The primary agent implemented the card and repository configuration; an independent subagent reviewed it and its findings were applied. The visual editor, group actions (for example turning every light off) and the richer tile options proposed in the UX review are intentionally out of scope. Direct control is delegated to embedded Compact Cards `compact-home-panel` rows (`sections`), so the overview card itself still never calls services; this adds a runtime dependency on `compact-cards.js` for sections only.
+The primary agent implemented the card and repository configuration; an independent subagent reviewed it and its findings were applied. The visual editor, group actions (for example turning every light off) and the richer tile options proposed in the UX review are intentionally out of scope. Direct control is provided by quick-control chips (`controls`) that call Home Assistant services only on a tap; unavailable entities are never commanded, duplicates are blocked, and failures notify. Embedding Compact Cards `compact-home-panel` rows (`items`) remains optional. Live-device behaviour of the chips has not been verified here.
 
 Before the first release, create a tag matching `package.json`, confirm the release job and asset, and verify installation and rendering in Home Assistant. Record those results separately; the TODO entries above are not passes.

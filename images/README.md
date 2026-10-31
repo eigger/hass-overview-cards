@@ -9,11 +9,11 @@ Run `python3 -m http.server 8131 --bind 127.0.0.1` in the repository root and op
 | `overview-card.jpg` | `preview.html?scenario=alert&width=1120&capture=true` | 1136 × 700 |
 | `overview-card-clear.jpg` | `preview.html?scenario=normal&width=1120&capture=true` | 1136 × 640 |
 | `overview-card-dark.jpg` | `preview.html?scenario=alert&width=1120&theme=dark&capture=true` | 1136 × 700 |
-| `overview-card-mobile.jpg` | `preview.html?scenario=alert&width=390&capture=true` in a 390px frame | 390 × 1470 |
+| `overview-card-mobile.jpg` | `preview.html?scenario=alert&width=390&capture=true` in a 390px frame | 390 × 1650 |
 | `overview-tiles.jpg`, `overview-tiles-clear.jpg`, `overview-tiles-offline.jpg` | `preview.html?variant=tiles&scenario=alert\|normal\|offline&capture=true` | 422 × 432 / 336 / 336 |
 | `showcase-light.jpg`, `showcase-dark.jpg` | `showcase.html?capture=true` (`&theme=dark`) | 1200 × 1320 |
 
-Run `./scripts/fetch-vendor.sh` first (the previews embed real `compact-home-panel` rows from `eigger/hass-compact-cards`; the file is git-ignored), then `./scripts/capture-images.sh` regenerates every image (macOS, Chrome and `sips`).
+`./scripts/capture-images.sh` regenerates every image (macOS, Google Chrome and `sips`).
 
 Headless Chrome does not render pages narrower than 500px, so the mobile image loads the showcase in a 390px iframe inside a 500px window and crops to the iframe.
 

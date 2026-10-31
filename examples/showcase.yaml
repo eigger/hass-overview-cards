@@ -1,5 +1,4 @@
 # HTML showcase와 동일한 카드 설정입니다. 엔티티 ID는 실제 환경에 맞게 변경하세요.
-# 섹션 행은 compact-cards.js(compact-home-panel)가 필요합니다.
 title: Overview Cards
 views:
 - title: 홈
@@ -8,6 +7,7 @@ views:
   max_columns: 3
   sections:
   - type: grid
+    column_span: 3
     cards:
     - type: custom:compact-overview-card
       name: 우리집 요약
@@ -34,7 +34,6 @@ views:
       - name: 조명
         icon: mdi:lightbulb-group
         navigation_path: "/lovelace/rooms"
-        columns: 2
         summary:
           type: count
           entities:
@@ -49,7 +48,7 @@ views:
         badges:
         - entity: sensor.illuminance
           name: 거실 조도
-        items:
+        controls:
         - entity: light.living_1
           name: 거실등 1
           tap_action:
@@ -85,7 +84,6 @@ views:
       - name: 냉난방
         icon: mdi:thermostat
         navigation_path: "/lovelace/rooms"
-        columns: 2
         summary:
           type: climate
           entities:
@@ -99,7 +97,7 @@ views:
           name: 거실
         - entity: sensor.bedroom_temperature
           name: 안방
-        items:
+        controls:
         - type: climate
           entity: climate.living_heater
           name: 거실 보일러
@@ -115,7 +113,6 @@ views:
       - name: 공기
         icon: mdi:air-filter
         navigation_path: "/lovelace/air"
-        columns: 2
         summary:
           type: value
           entity: sensor.pm2_5
@@ -126,7 +123,7 @@ views:
           - value: 76
             direction: above
             level: critical
-        items:
+        controls:
         - entity: switch.purifier
           name: 공기청정기
           tap_action:
@@ -146,7 +143,6 @@ views:
       - name: 가전
         icon: mdi:washing-machine
         navigation_path: "/lovelace/appliances"
-        columns: 1
         summary:
           type: status
           idle_text: 모두 대기
@@ -164,7 +160,7 @@ views:
             name: 식세기
             active:
             - running
-        items:
+        controls:
         - entity: sensor.washer_state
           name: 세탁기
           tap_action:
@@ -180,12 +176,11 @@ views:
       - name: 에너지
         icon: mdi:flash
         navigation_path: "/lovelace/manage"
-        columns: 2
         summary:
           type: value
           entity: sensor.power
           secondary_entity: sensor.bill
-        items:
+        controls:
         - entity: sensor.power
           name: 현재 전력
           tap_action:
@@ -205,7 +200,6 @@ views:
       - name: 서버
         icon: mdi:server
         navigation_path: "/lovelace/proxmox"
-        columns: 2
         summary:
           type: health
           items:
@@ -218,7 +212,7 @@ views:
             - value: 75
               direction: above
               level: warning
-        items:
+        controls:
         - entity: sensor.ssd_smart
           name: SSD SMART
           tap_action:

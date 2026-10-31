@@ -40,7 +40,7 @@ customElements.define('ha-icon',class extends HTMLElement{
 });
 if(showcaseParams.get('capture')==='true')document.body.classList.add('capture');
 </script>
-<script src="../vendor/compact-cards.js"></script><script src="../compact-overview-card.js"></script>
+<script src="../compact-overview-card.js"></script>
 <script src="states.js"></script>
 <script>
 const {translate}=compactPreviewLocale,{states,sectionsConfig,tilesConfig,scenarios,format}=overviewPreview,toast=document.querySelector('.toast');
@@ -48,7 +48,8 @@ compactPreviewLocale.start();
 const notify=text=>{toast.textContent=text;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);};
 function mount(host,config,scenario){
   const initial=states();scenarios[scenario](initial);const card=document.createElement('compact-overview-card');
-  const hass={states:translate(initial),formatEntityState:s=>translate(format(s)),callService:async(_d,service,data,_t,target)=>{const id=data?.entity_id||target?.entity_id,s=hass.states[id];if(service==='toggle'&&s)s.state=s.state==='on'?'off':'on';setTimeout(()=>{card.hass={...hass};},150);}};
+  const hass={states:translate(initial),formatEntityState:s=>translate(format(s))};
+  hass.callService=overviewPreview.mockService(hass,()=>{card.hass={...hass};});
   card.setConfig(translate(config()));card.hass=hass;
   card.addEventListener('hass-more-info',e=>notify(translate('모의 정보')+' · '+e.detail.entityId));host.append(card);
 }

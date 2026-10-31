@@ -260,3 +260,70 @@ test('section configs are validated and tiles remain optional when sections exis
   ]) assert.throws(() => sectioned(config));
   assert.doesNotThrow(() => sectioned({ sections: [{ name: 'x', items: [{ entity: 'light.a' }] }] }));
 });
+
+function controlled(config, states) {
+  const window = new Window({ url: 'http://localhost/' }); window.eval(source);
+  const card = window.document.createElement('compact-overview-card'); card.setConfig(config);
+  window.document.body.append(card);
+  const calls = [];
+  card.hass = { states, callService: async (...args) => { calls.push(args); } };
+  return { window, card, calls };
+}
+const chips = card => [...card.shadowRoot.querySelectorAll('.chip')];
+
+test('toggle chips call homeassistant.toggle once per tap and show the on state', async () => {
+  const { card, calls } = controlled({ sections: [{ name: '조명', controls: [{ entity: 'light.a', name: 'A' }, { entity: 'switch.b' }] }] },
+    { 'light.a': state('light.a', 'on'), 'switch.b': state('switch.b', 'off') });
+  const [a, b] = chips(card);
+  assert.equal(a.hasAttribute('data-active'), true); assert.equal(b.hasAttribute('data-active'), false);
+  a.querySelector('.chip-main').click();
+  await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [['homeassistant', 'toggle', { entity_id: 'light.a' }]]);
+});
+
+test('unavailable chips do not call services but still open details', async () => {
+  const { card, calls } = controlled({ sections: [{ name: 'x', controls: [{ entity: 'light.a' }] }] }, { 'light.a': state('light.a', 'unavailable') });
+  let opened; card.addEventListener('hass-more-info', e => { opened = e.detail.entityId; });
+  chips(card)[0].querySelector('.chip-main').click();
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(calls.length, 0);
+  assert.equal(chips(card)[0].hasAttribute('data-offline'), true);
+  assert.equal(opened, undefined);
+});
+
+test('readout chips open more-info and action chips honour confirmation', async () => {
+  const { window, card, calls } = controlled({ sections: [{ name: 'x', controls: [
+    { entity: 'sensor.t' },
+    { entity: 'script.feed', tap_action: { action: 'perform-action', perform_action: 'script.turn_on', confirmation: { text: '실행?' } } },
+    { entity: 'button.b' },
+  ] }] }, { 'sensor.t': state('sensor.t', '21'), 'script.feed': state('script.feed', 'off'), 'button.b': state('button.b', '2024-01-01') });
+  let opened; card.addEventListener('hass-more-info', e => { opened = e.detail.entityId; });
+  const [sensor, script, button] = chips(card);
+  sensor.querySelector('.chip-main').click(); assert.equal(opened, 'sensor.t');
+  window.confirm = () => false; script.querySelector('.chip-main').click(); await new Promise(r => setTimeout(r, 0)); assert.equal(calls.length, 0);
+  window.confirm = () => true; script.querySelector('.chip-main').click(); await new Promise(r => setTimeout(r, 0));
+  button.querySelector('.chip-main').click(); await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(calls.map(c => c.slice(0, 2).join('.')), ['script.turn_on', 'button.press']);
+});
+
+test('climate chip debounces target steps into one request, clamps to the range, and toggles power', async () => {
+  const climate = state('climate.c', 'heat', { friendly_name: 'C', temperature: 24, current_temperature: 22, min_temp: 16, max_temp: 25, target_temp_step: 0.5, hvac_action: 'heating' });
+  const { card, calls } = controlled({ sections: [{ name: 'x', controls: [{ entity: 'climate.c' }] }] }, { 'climate.c': climate });
+  const chip = chips(card)[0];
+  assert.match(chip.querySelector('output').textContent, /24/);
+  for (let i = 0; i < 5; i++) chip.querySelector('[aria-label="설정 온도 높이기"]').click();
+  assert.match(chip.querySelector('output').textContent, /25/);
+  await new Promise(r => setTimeout(r, 600));
+  const sets = calls.filter(c => c[1] === 'set_temperature');
+  assert.equal(sets.length, 1); assert.equal(sets[0][2].temperature, 25);
+  chip.querySelector('[aria-label="켜기/끄기"]').click(); await new Promise(r => setTimeout(r, 0));
+  assert.equal(calls.at(-1)[1], 'turn_off');
+});
+
+test('control validation rejects bad entries and sections may use controls without items', () => {
+  for (const controls of [[], [{ entity: 'nope' }], [{ entity: 'light.a', type: 'x' }], [{ entity: 'light.a', tap_action: { action: 'nope' } }], [{ entity: 'light.a', tap_action: { action: 'navigate', navigation_path: '//x' } }], [{ entity: 'light.a', type: 'climate' }]]) {
+    assert.throws(() => controlled({ sections: [{ name: 'x', controls }] }, {}));
+  }
+  assert.throws(() => controlled({ sections: [{ name: 'x' }] }, {}), /controls 또는 items/);
+  assert.doesNotThrow(() => controlled({ sections: [{ name: 'x', controls: [{ entity: 'light.a' }] }] }, {}));
+});

@@ -1,10 +1,10 @@
 # 쇼케이스와 대표 이미지
 
-`examples/showcase.html`은 탭 단위 섹션 오버뷰와, 세 가지 상황(확인 필요·정상·연결 불가)의 요약 타일을 보여 주는 모의 대시보드입니다. 섹션의 조작 행은 실제 `compact-home-panel`이라서 토글과 냉난방 조작이 모의 상태에 반영됩니다. 실제 `compact-overview-card.js` 구현을 그대로 생성하며, 카드 내부 모양을 HTML로 다시 그리거나 스크린샷용 스타일로 덮어쓰지 않습니다.
+`examples/showcase.html`은 빠른 조작 칩이 있는 그룹 오버뷰와, 세 가지 상황(확인 필요·정상·연결 불가)의 요약 타일을 보여 주는 모의 대시보드입니다. 칩의 토글과 냉난방 −/+ 조작은 모의 상태에 반영됩니다. 실제 `compact-overview-card.js` 구현을 그대로 생성하며, 카드 내부 모양을 HTML로 다시 그리거나 스크린샷용 스타일로 덮어쓰지 않습니다.
 
 ## 로컬 실행
 
-먼저 `./scripts/fetch-vendor.sh`로 `vendor/compact-cards.js`를 내려받습니다(미리보기 전용, git 제외). 저장소 루트를 정적 서버로 제공한 뒤 다음 경로를 엽니다.
+저장소 루트를 정적 서버로 제공한 뒤 다음 경로를 엽니다.
 
 - 밝은 테마: `/examples/showcase.html`
 - 미리보기는 기본 영어입니다. 한글 화면은 `lang=ko`를 붙입니다.
@@ -17,7 +17,7 @@
 
 ## 구현과 모의 동작
 
-- 모든 카드는 실제 커스텀 엘리먼트이고 섹션 행은 실제 `compact-home-panel`입니다. 상황은 모의 엔티티 상태(`examples/states.js`)만 바꿉니다.
+- 모든 카드는 실제 커스텀 엘리먼트입니다. 상황은 모의 엔티티 상태(`examples/states.js`)만 바꿉니다.
 - Home Assistant의 `ha-card`·`ha-icon`만 로컬 시각 프리미티브로 대신합니다. 아이콘은 `preview-icons.js`의 로컬 MDI 경로를 사용하고 외부 이미지·폰트·스크립트를 요청하지 않습니다.
 - 서비스 호출은 메모리의 모의 상태만 바꿉니다. 이름·알림·타일을 누르면 모의 상세 정보 또는 이동 토스트만 표시하며, 실제 HA 상세 정보 창을 재현한 것은 아닙니다.
 
@@ -25,8 +25,8 @@
 
 ## Home Assistant에서 같은 구성 사용
 
-`examples/showcase.yaml`은 HTML과 같은 카드 설정을 사용하는 대시보드 예제입니다. 엔티티 ID를 실제 환경에 맞게 바꾸고 카드 리소스를 먼저 등록하세요. HTML의 모의 엔티티와 상태는 YAML만으로 생성되지 않습니다. 카드 설정을 변경하면 `examples/states.js`와 YAML을 함께 변경하세요. [Sections 문서](https://www.home-assistant.io/dashboards/sections/)의 대시보드 구조를 따릅니다.
+`examples/showcase.yaml`은 HTML과 같은 카드 설정을 사용하는 대시보드 예제입니다(전체 폭을 쓰도록 섹션에 `column_span: 3`을 지정). 엔티티 ID를 실제 환경에 맞게 바꾸고 카드 리소스를 먼저 등록하세요. HTML의 모의 엔티티와 상태는 YAML만으로 생성되지 않습니다. 카드 설정을 변경하면 `examples/states.js`와 YAML을 함께 변경하세요. [Sections 문서](https://www.home-assistant.io/dashboards/sections/)의 대시보드 구조를 따릅니다.
 
 ## English
 
-`examples/showcase.html` is a mock dashboard with the per-tab section overview and, below it, the summary tiles in three situations (needs attention, everything normal, devices unavailable). Section rows are real `compact-home-panel` rows, so toggles and climate controls change the mocked state. Only `ha-card` and `ha-icon` are local stand-ins; scenarios change mocked entity states only (`examples/states.js`). Run `./scripts/fetch-vendor.sh` once to download `vendor/compact-cards.js` (preview only, git-ignored), then run `python3 -m http.server 8131 --bind 127.0.0.1` in the repository root and open `/examples/showcase.html` (add `?lang=ko` for Korean, `?theme=dark` for the dark theme, `&capture=true` to hide the theme button). `examples/showcase.yaml` holds the same card configuration for Home Assistant. Screenshots are real browser captures; see [images/README.md](../images/README.md).
+`examples/showcase.html` is a mock dashboard with the grouped overview (quick-control chips) and, below it, the summary tiles in three situations (needs attention, everything normal, devices unavailable). Toggles and climate −/+ change the mocked state only. Only `ha-card`, `ha-icon` and `ha-state-icon` are local stand-ins; scenarios change mocked entity states only (`examples/states.js`). Run `python3 -m http.server 8131 --bind 127.0.0.1` in the repository root and open `/examples/showcase.html` (add `?lang=ko` for Korean, `?theme=dark` for the dark theme, `&capture=true` to hide the theme button). `examples/showcase.yaml` holds the same card configuration for Home Assistant. Screenshots are real browser captures; see [images/README.md](../images/README.md).
