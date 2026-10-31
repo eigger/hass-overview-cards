@@ -1,0 +1,70 @@
+# HTML showcase와 동일한 카드 설정입니다. 엔티티 ID는 실제 환경에 맞게 변경하세요.
+title: "Overview Cards"
+views:
+  - title: "홈"
+    path: "overview"
+    type: "sections"
+    max_columns: 3
+    sections:
+      - type: "grid"
+        cards:
+          - type: "custom:compact-overview-card"
+            name: "우리집 요약"
+            columns: "auto"
+            alerts:
+              - entity: "binary_sensor.kitchen_leak"
+                name: "누수 · 주방"
+                when: { state: "on" }
+                level: "critical"
+                navigation_path: "/lovelace/rooms"
+              - entity: "binary_sensor.mech_leak"
+                name: "누수 · 실외기실"
+                when: { state: "on" }
+                level: "critical"
+                navigation_path: "/lovelace/rooms"
+              - entity: "lock.gas_valve"
+                name: "가스 밸브 열림"
+                when: { state: "unlocked" }
+                level: "warning"
+            tiles:
+              - type: "count"
+                name: "조명"
+                icon: "mdi:lightbulb-group"
+                entities: ["light.living_1", "light.living_2", "light.living_accent", "light.bedroom_night", "light.bedroom_accent", "switch.kitchen", "switch.dining", "switch.hall"]
+                navigation_path: "/lovelace/rooms"
+              - type: "climate"
+                name: "냉난방"
+                icon: "mdi:thermostat"
+                entities: ["climate.living_heater", "climate.bedroom_heater", "climate.living_ac", "climate.bedroom_ac"]
+                value_entity: "sensor.living_temperature"
+                navigation_path: "/lovelace/rooms"
+              - type: "status"
+                name: "가전"
+                icon: "mdi:washing-machine"
+                idle_text: "모두 대기"
+                items:
+                  - { entity: "sensor.washer_state", name: "세탁", active: ["running"], remaining: "sensor.washer_remaining" }
+                  - { entity: "sensor.dryer_state", name: "건조", active: ["running"] }
+                  - { entity: "sensor.dishwasher_state", name: "식세기", active: ["running"] }
+                navigation_path: "/lovelace/appliances"
+              - type: "value"
+                name: "공기"
+                icon: "mdi:air-filter"
+                entity: "sensor.pm2_5"
+                thresholds:
+                  - { value: 35, direction: "above", level: "warning" }
+                  - { value: 75, direction: "above", level: "critical" }
+                navigation_path: "/lovelace/air"
+              - type: "value"
+                name: "에너지"
+                icon: "mdi:flash"
+                entity: "sensor.power"
+                secondary_entity: "sensor.bill"
+                navigation_path: "/lovelace/manage"
+              - type: "health"
+                name: "서버"
+                icon: "mdi:server"
+                items:
+                  - { entity: "sensor.ssd_smart", problem: { state_not: "PASSED" }, level: "critical" }
+                  - { entity: "sensor.cpu_temp", thresholds: [{ value: 75, direction: "above", level: "warning" }] }
+                navigation_path: "/lovelace/proxmox"

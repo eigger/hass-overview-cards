@@ -2,6 +2,23 @@
 
 **English** | [한국어](README.ko.md)
 
+![Overview card with alerts and category tiles](images/overview-card.jpg)
+
+*Rendered with the actual card JavaScript and mocked states. This is a local preview, not live-device verification.*
+
+<details>
+<summary>View the other states and the dark theme</summary>
+
+![All items normal](images/overview-card-clear.jpg)
+
+![Some devices unavailable](images/overview-card-offline.jpg)
+
+![Dark theme](images/overview-card-dark.jpg)
+
+</details>
+
+[Card guide](docs/compact-overview-card.md) · [Showcase](docs/showcase.md) · [Showcase configuration](examples/showcase.yaml) · [Standards reference](STANDARDS.md)
+
 Summary cards for a Home Assistant overview page. Details stay in room and device views; the overview shows **one-line summaries per category** and **alerts that need attention**.
 
 `custom:compact-overview-card` · one JavaScript file, no build step or runtime dependencies · read-only (never calls services)

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Overview Cards · 우리집</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light;--primary-color:#237d92;--primary-text-color:#24333e;--secondary-text-color:#74818b;--divider-color:#e2e8ed;--disabled-color:#b4bec6;--card-background-color:#fff;--secondary-background-color:#f2f5f7;--warning-color:#ffa600;--error-color:#db4437}
+:root[data-theme=dark]{color-scheme:dark;--primary-color:#78b9c8;--primary-text-color:#e5edf1;--secondary-text-color:#9aaab5;--divider-color:#34434c;--disabled-color:#61737d;--card-background-color:#1d2931;--secondary-background-color:#141d23}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:32px;background:var(--secondary-background-color);color:var(--primary-text-color)}
+header,main,footer{max-width:1120px;margin-inline:auto}header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:25px;border-bottom:1px solid var(--divider-color)}
+h1{margin:0;font-size:26px}.caption{margin:6px 0 0;font-size:14px;color:var(--secondary-text-color)}
+button{font:inherit;padding:8px 12px;border:1px solid var(--divider-color);border-radius:8px;background:var(--card-background-color);color:var(--primary-text-color)}
+main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding-block:28px}@media(max-width:1160px){main{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){body{padding:16px}main{grid-template-columns:1fr}}
+section h2{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--secondary-text-color)}
+footer{padding-top:16px;border-top:1px solid var(--divider-color);font-size:12px;color:var(--secondary-text-color)}
+body.capture header button{display:none}
+.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#263238;color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;opacity:0;pointer-events:none}.toast.show{opacity:1}
+</style>
+<script>
+const showcaseParams=new URLSearchParams(location.search);
+document.documentElement.dataset.theme=showcaseParams.get('theme')==='dark'?'dark':'light';
+</script>
+</head>
+<body>
+<header><div><h1>Overview Cards</h1><p class="caption">우리집 · 한눈에 보는 요약과 확인이 필요한 알림</p></div><button id="theme" type="button">테마 변경</button></header>
+<main aria-label="모의 Home Assistant 대시보드"></main>
+<footer>실제 Overview Cards로 구성한 모의 대시보드입니다. 표시된 값과 동작은 예시이며 실제 기기에 연결하지 않습니다.</footer>
+<div class="toast" role="status" aria-live="polite"></div>
+<script src="preview-icons.js"></script>
+<script src="preview-locale.js"></script>
+<script>
+// These local primitives stand in for HA; the card layout and logic come from the real bundle.
+customElements.define('ha-card',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,14px);color:var(--primary-text-color)}</style><slot></slot>';}});
+customElements.define('ha-icon',class extends HTMLElement{
+ constructor(){super();this.attachShadow({mode:'open'});this._observer=new MutationObserver(()=>this.update());}
+ connectedCallback(){this.update();this._observer.observe(this,{attributes:true,attributeFilter:['icon']});}
+ disconnectedCallback(){this._observer.disconnect();}
+ get icon(){return this.getAttribute('icon');}set icon(value){this.setAttribute('icon',value);}
+ update(){const key=(this.getAttribute('icon')||'').replace('mdi:',''),path=window.compactPreviewIcons?.[key];this.shadowRoot.innerHTML='<style>:host{display:inline-flex;align-items:center;justify-content:center}</style>';if(!path)return;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),glyph=document.createElementNS('http://www.w3.org/2000/svg','path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','100%');svg.setAttribute('height','100%');svg.setAttribute('fill','currentColor');glyph.setAttribute('d',path);svg.append(glyph);this.shadowRoot.append(svg);}
+});
+if(showcaseParams.get('capture')==='true')document.body.classList.add('capture');
+</script>
+<script src="../compact-overview-card.js"></script>
+<script src="states.js"></script>
+<script>
+const {translate}=compactPreviewLocale,{states,config,scenarios,format}=overviewPreview,toast=document.querySelector('.toast');
+compactPreviewLocale.start();
+for(const [scenario,label]of [['alert','확인 필요한 항목이 있을 때'],['normal','모두 정상일 때'],['offline','일부 기기가 응답하지 않을 때']]){
+  const section=document.createElement('section'),title=document.createElement('h2'),initial=states();scenarios[scenario](initial);
+  title.textContent=label;const card=document.createElement('compact-overview-card');card.setConfig(translate(config()));
+  card.hass={states:translate(initial),formatEntityState:s=>translate(format(s)),callService(){throw new Error('read-only')}};
+  card.addEventListener('hass-more-info',e=>{toast.textContent=translate('모의 정보')+' · '+e.detail.entityId;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);});
+  section.append(title,card);document.querySelector('main').append(section);
+}
+window.addEventListener('location-changed',()=>{toast.textContent='navigate → '+location.pathname;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);});
+document.querySelector('#theme').onclick=()=>{const root=document.documentElement;root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';};
+</script>
+</body>
+</html>

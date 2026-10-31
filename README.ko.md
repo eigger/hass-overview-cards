@@ -2,6 +2,23 @@
 
 [English](README.md) | **한국어**
 
+![알림과 카테고리 타일을 보여주는 오버뷰 카드](images/overview-card-ko.jpg)
+
+*실제 카드 JavaScript와 모의 상태로 렌더링했습니다. 로컬 미리보기이며 실제 기기 검증이 아닙니다.*
+
+<details>
+<summary>다른 상태와 어두운 테마 보기</summary>
+
+![모든 항목이 정상일 때](images/overview-card-clear-ko.jpg)
+
+![일부 기기가 응답하지 않을 때](images/overview-card-offline-ko.jpg)
+
+![어두운 테마](images/overview-card-dark-ko.jpg)
+
+</details>
+
+[카드 가이드](docs/compact-overview-card.md) · [쇼케이스](docs/showcase.md) · [쇼케이스 설정](examples/showcase.yaml) · [기준 문서](STANDARDS.md)
+
 Home Assistant 오버뷰용 요약 카드. 방/기기 상세는 하위 뷰에 맡기고, 홈 화면에서는 **카테고리별 한 줄 요약**과 **확인이 필요한 알림**만 보여줍니다.
 
 `custom:compact-overview-card` · 단일 JS 파일, 빌드/외부 라이브러리 없음 · 상태 읽기 전용(서비스 호출 없음)
