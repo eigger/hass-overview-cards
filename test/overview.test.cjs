@@ -334,11 +334,3 @@ test('group span is validated and exposed for wide layouts', () => {
   const [wide, normal] = sections(card);
   assert.equal(wide.dataset.span, '2'); assert.equal(normal.dataset.span, undefined);
 });
-
-test('groups with embedded climate rows span two columns by default and span 1 opts out', () => {
-  const climate = { type: 'climate', entity: 'climate.a' };
-  const { card } = sectioned({ sections: [
-    { name: 'a', items: [climate] }, { name: 'b', span: 1, items: [climate] }, { name: 'c', items: [{ entity: 'light.a' }] }, { name: 'd', controls: [{ entity: 'climate.a' }] },
-  ] });
-  assert.deepEqual(sections(card).map(el => el.dataset.span), ['2', undefined, undefined, undefined]);
-});

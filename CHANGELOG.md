@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.3.3 — 2026-10-31
+
+- Restore predictable layout: groups follow the configured order (left to right, top to bottom) in equal-width columns of at least 460px instead of being packed and reordered. Cards keep their natural height. Climate rows from Compact Cards now fit on one line in a single column, so the automatic two-column span for climate groups is removed; `span` remains optional (2 from 940px, 3 from 1400px).
+
 ## 0.3.2 — 2026-10-31
 
 - Groups that embed `type: climate` rows now span two columns on cards at least 700px wide by default, so air-conditioner mode buttons stay on one line without extra configuration; set `span: 1` to opt out.
