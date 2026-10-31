@@ -17,7 +17,7 @@
 
 </details>
 
-익숙한 오버뷰 구성을 유지하는 카드입니다. **탭(뷰) 단위 섹션의 헤더에 요약을 보여주고 그 아래에 실제 조작 행을 그대로** 두며, 확인이 필요한 항목은 **알림 띠**로 보여줍니다. 조작 행은 [Compact Cards](https://github.com/eigger/hass-compact-cards)의 `compact-home-panel`이라서 오버뷰에서 바로 조명을 켜고 끄고, 냉난방을 조절하고, 센서 상세를 열 수 있습니다.
+익숙한 오버뷰 구성을 유지하는 카드입니다. **그룹(기본은 탭 단위, 방 단위도 가능)의 헤더에 요약을 보여주고 그 아래에 실제 조작 행을 그대로** 두며, 확인이 필요한 항목은 **알림 띠**로 보여줍니다. 조작 행은 [Compact Cards](https://github.com/eigger/hass-compact-cards)의 `compact-home-panel`이라서 오버뷰에서 바로 조명을 켜고 끄고, 냉난방을 조절하고, 센서 상세를 열 수 있습니다.
 
 `custom:compact-overview-card` · JavaScript 한 파일 · 섹션은 Compact Cards의 `compact-cards.js`가 필요합니다(요약 타일은 불필요)
 
