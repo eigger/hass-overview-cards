@@ -139,17 +139,14 @@
         .main small{font-size:13px;font-weight:400;letter-spacing:0;color:var(--secondary-text-color);margin-left:3px}
         .main small:empty{display:none}.sub{font-size:12px;color:var(--secondary-text-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:15px}
         @container(max-width:360px){.sub{display:none}.tile{padding:8px}}
-        /* Groups keep the configured order (left to right, top to bottom) in equal-width columns of at least 460px, so climate rows fit on one line. Cards keep their natural height. */
-        .sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(460px,100%),1fr));gap:12px;margin-top:12px;align-items:start}.sections:empty{display:none;margin:0}
+        /* Groups fill equal-width columns of at least 460px from top to bottom in the configured order (like a newspaper), and the browser balances the column heights, so there are no gaps and cards keep their natural height. */
+        .sections{display:block;column-width:460px;column-gap:12px;margin-top:12px}.sections:empty{display:none;margin:0}
         :host([data-bare]) .sections{margin-top:0}
-        :host([section-columns="1"]) .sections{grid-template-columns:minmax(0,1fr)}
-        :host([section-columns="2"]) .sections{grid-template-columns:repeat(2,minmax(0,1fr))}
-        :host([section-columns="3"]) .sections{grid-template-columns:repeat(3,minmax(0,1fr))}
-        @container(max-width:639px){:host([section-columns="2"]) .sections,:host([section-columns="3"]) .sections{grid-template-columns:minmax(0,1fr)}}
-        ha-card.section{display:flex;flex-direction:column;overflow:hidden;box-shadow:none;align-self:start}
-        /* A group may span several columns (for example so climate rows fit on one line) when the card is wide enough. */
-        @container(min-width:940px){ha-card.section[data-span="2"],ha-card.section[data-span="3"]{grid-column:span 2}}
-        @container(min-width:1400px){ha-card.section[data-span="3"]{grid-column:span 3}}
+        :host([section-columns="1"]) .sections{column-count:1;column-width:auto}
+        :host([section-columns="2"]) .sections{column-count:2;column-width:auto}
+        :host([section-columns="3"]) .sections{column-count:3;column-width:auto}
+        @container(max-width:639px){:host([section-columns="2"]) .sections,:host([section-columns="3"]) .sections{column-count:1}}
+        ha-card.section{display:block;overflow:hidden;box-shadow:none;break-inside:avoid;margin:0 0 12px}
         .sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;padding:4px 12px 0}
         .sec-title{display:flex;align-items:center;gap:8px;flex:1 1 96px;min-width:96px;padding:4px;border:0;border-radius:6px;background:transparent;text-align:left;font:inherit;font-size:14px;font-weight:600;color:var(--primary-text-color)}
         div.sec-title{cursor:default}
@@ -213,7 +210,6 @@
         if (section.icon !== undefined && typeof section.icon !== 'string') fail('icon은 문자열이어야 합니다.');
         if (section.navigation_path !== undefined && !safePath(section.navigation_path)) fail('navigation_path는 /로 시작하는 로컬 경로여야 합니다.');
         if (section.columns !== undefined && !['auto', 1, 2].includes(section.columns)) fail('columns는 auto, 1, 2 중 하나여야 합니다.');
-        if (section.span !== undefined && ![1, 2, 3].includes(section.span)) fail('span은 1, 2, 3 중 하나여야 합니다.');
         const hasItems = section.items !== undefined, hasControls = section.controls !== undefined;
         if (!hasItems && !hasControls) fail('controls 또는 items가 필요합니다.');
         if (hasItems && (!Array.isArray(section.items) || !section.items.length || section.items.some(item => !item || typeof item !== 'object' || Array.isArray(item)))) fail('items에는 compact-home-panel 항목 목록이 필요합니다.');
@@ -429,7 +425,6 @@
       const box = this.shadowRoot.querySelector('.sections'); box.replaceChildren(); this._sections = [];
       for (const section of this._config.sections ?? []) {
         const card = document.createElement('ha-card'); card.className = 'section';
-        if (section.span && section.span > 1) card.dataset.span = String(section.span);
         const head = document.createElement('div'); head.className = 'sec-head';
         const title = document.createElement(section.navigation_path ? 'button' : 'div'); title.className = 'sec-title';
         if (section.navigation_path) { title.onclick = () => this._go(section.navigation_path); title.setAttribute('aria-label', `${section.name} 열기`); }

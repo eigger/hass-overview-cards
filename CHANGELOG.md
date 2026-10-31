@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.3.4 — 2026-10-31
+
+- Fill groups into equal-width columns top to bottom in the configured order (balanced heights, no gaps between or below cards), replacing the row-by-row grid that left blank space under short groups. The optional `span` is removed.
+
 ## 0.3.3 — 2026-10-31
 
 - Restore predictable layout: groups follow the configured order (left to right, top to bottom) in equal-width columns of at least 460px instead of being packed and reordered. Cards keep their natural height. Climate rows from Compact Cards now fit on one line in a single column, so the automatic two-column span for climate groups is removed; `span` remains optional (2 from 940px, 3 from 1400px).

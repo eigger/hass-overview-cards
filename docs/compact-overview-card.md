@@ -60,12 +60,11 @@ sections:
 | `items` | 예* | — | 칩 아래에 표시할 `compact-home-panel` 행([해당 카드](https://github.com/eigger/hass-compact-cards/blob/main/docs/compact-home-panel.md)와 동일, Compact Cards 필요). `*` 둘 중 하나 이상 |
 | `icon` | 아니요 | `mdi:circle-outline` | 제목 아이콘 |
 | `navigation_path` | 아니요 | 없음 | `/`로 시작하는 로컬 경로 |
-| `span` | 아니요 | `1` | `1`, `2`, `3`. 카드 폭 940px 이상(3은 1400px 이상)에서 그룹이 여러 열을 차지합니다. 좁은 카드(모바일)에서는 무시합니다 |
 | `columns` | 아니요 | `auto` | `items`의 열 수 `auto`, `1`, `2` |
 | `summary` | 아니요 | 없음 | `name` 없는 타일 사양. 헤더에 `3/8 켜짐`, `주의 · 48 µg/m³` 형태로 표시 |
 | `badges` | 아니요 | 없음 | `[{entity, name}]`. 헤더의 센서 값. 누르면 상세 정보 |
 
-그룹은 설정한 순서대로(왼쪽에서 오른쪽, 위에서 아래) 폭이 같은 열에 배치하고 카드는 원래 높이를 유지합니다. 열 폭은 최소 460px이라 compact 냉난방 행이 한 줄에 들어가고, 모바일에서는 1열입니다.
+그룹은 설정한 순서대로 폭이 같은 열에 위에서 아래로(첫 열부터 차례로) 채우고 열 높이는 자동으로 균형을 맞춥니다. 카드 사이에 빈틈이 없고, 열 폭은 최소 460px라 compact 냉난방 행이 한 줄에 들어가며, 모바일에서는 1열입니다.
 
 ## 빠른 조작 칩
 
