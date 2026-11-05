@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.1 — 2026-11-06
+
 - Fix a brief flash of card frames on refresh or first load: groups were painted in the one-column order for a frame before the column layout moved them. They are now hidden until the first layout completes (with a 400ms fallback).
 
 ## 0.5.0 — 2026-10-31
