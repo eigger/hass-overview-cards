@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix the white/black flash around group card borders on load: Home Assistant's `ha-card` animates `all` for 0.3s, so when theme variables arrive after the card is first styled it fades from the fallback white background and `#e0e0e0` border to the theme colours. Our cards now disable that transition.
+
 ## 0.5.1 — 2026-11-06
 
 - Fix a brief flash of card frames on refresh or first load: groups were painted in the one-column order for a frame before the column layout moved them. They are now hidden until the first layout completes (with a 400ms fallback).

@@ -105,6 +105,7 @@
         :host{display:block;container-type:inline-size;-webkit-tap-highlight-color:transparent;
           --compact-control-surface:color-mix(in srgb,var(--primary-text-color) 4%,transparent);
           --compact-icon-surface:color-mix(in srgb,var(--primary-color) 10%,transparent)}
+        ha-card{transition:none}
         ha-card.shell{padding:10px;box-shadow:none;border-radius:var(--ha-card-border-radius,14px)}
         :host([data-bare]) ha-card.shell{--ha-card-background:transparent;--ha-card-border-width:0;--ha-card-box-shadow:none;padding:0}
         .grid:empty{display:none}
