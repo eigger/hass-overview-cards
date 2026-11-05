@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.5.1 — 2026-11-06
+
+- Fix a brief flash of card frames on refresh or first load: groups were painted in the one-column order for a frame before the column layout moved them. They are now hidden until the first layout completes (with a 400ms fallback).
+
 ## 0.5.0 — 2026-10-31
 
 - Add a visual editor (`getConfigElement`): card title and columns, alerts, and groups with header summary (count, climate, value), readings and quick-control chips, including add, reorder and delete. `items`, `tiles` and `status`/`health` summaries remain YAML-only and are preserved. Enable the card picker preview and build the starter configuration from the user's own lights, climate entities and sensors.

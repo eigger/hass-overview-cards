@@ -144,6 +144,7 @@
         .sections{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:12px;align-items:start;margin-top:12px}.sections:empty{display:none;margin:0}
         :host([data-masonry]) .sections{grid-auto-rows:1px;row-gap:0;margin-bottom:-12px}
         :host([data-bare]) .sections{margin-top:0}
+        :host(:not([data-ready])) .sections{visibility:hidden}
         ha-card.section{display:block;min-width:0;overflow:hidden;box-shadow:none;margin:0}
         .sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:44px;padding:4px 12px 0}
         .sec-head .sec-sum{margin-left:auto}
@@ -240,9 +241,11 @@
     connectedCallback() {
       if (typeof ResizeObserver === 'function' && !this._resize) this._resize = new ResizeObserver(() => this._queueLayout());
       this._observeAll(); this._queueLayout();
+      // Groups stay hidden until the first _layout() so they never flash in the pre-layout one-column order; this timer only guards against a layout that cannot run (zero width).
+      if (!this.hasAttribute('data-ready')) this._readyTimer = setTimeout(() => this.setAttribute('data-ready', ''), 400);
     }
     disconnectedCallback() {
-      this._resize?.disconnect(); cancelAnimationFrame(this._raf); this._raf = 0;
+      this._resize?.disconnect(); cancelAnimationFrame(this._raf); this._raf = 0; clearTimeout(this._readyTimer);
       for (const ref of this._sections) for (const chip of ref.chips) clearTimeout(chip.stepTimer);
     }
     _observeAll() {
@@ -275,7 +278,7 @@
       if (columns === 1 || !cards.length) {
         this.removeAttribute('data-masonry'); this._layoutKey = '';
         for (const card of cards) { card.style.gridColumn = ''; card.style.gridRow = ''; }
-        return;
+        this.setAttribute('data-ready', ''); return;
       }
       const heights = cards.map(card => Math.ceil(card.getBoundingClientRect().height));
       if (heights.some(h => !h)) return;
@@ -287,7 +290,7 @@
         card.style.gridColumn = String(this._assigned.placement[i] + 1);
         card.style.gridRow = `span ${heights[i] + GAP}`;
       });
-      this.setAttribute('data-masonry', '');
+      this.setAttribute('data-masonry', ''); this.setAttribute('data-ready', '');
     }
     set hass(hass) { this._hass = hass; this._render(); }
     getCardSize() {
