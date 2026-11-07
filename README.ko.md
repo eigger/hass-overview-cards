@@ -1,6 +1,18 @@
-# Overview Cards
+# Overview Cards for Home Assistant
+
+Home Assistant 대시보드에서 알림, 그룹별 상태 요약, 빠른 조작을 한곳에 보여주는 커스텀 카드입니다.
 
 [English](README.md) | **한국어**
+
+[![Release](https://img.shields.io/github/v/release/eigger/hass-overview-cards?style=flat)](https://github.com/eigger/hass-overview-cards/releases)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#설치)
+[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-overview-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-overview-cards/actions/workflows/check.yml)
+
+## 주요 기능
+
+한눈에 훑기 쉽고 바로 조작할 수 있는 대시보드 오버뷰입니다. **그룹**(기본은 탭 단위, 방 단위도 가능)마다 헤더에 굵은 **상태 요약**을 보여주고 아래에 **빠른 조작 칩**을 둡니다. 조명은 눌러서 켜고 끄고, 냉난방은 −/+로 조절하고, 센서는 눌러서 상세를 봅니다. 그룹 제목을 누르면 세부 내용이 있는 탭으로 이동합니다. `status`·`health` 요약과 조작 없는 요약 타일도 제공합니다. 맨 위 **알림 띠**는 확인이 필요한 항목만 보여주고, 이상이 없으면 공간을 차지하지 않습니다.
+
+`custom:compact-overview-card` · JavaScript 한 파일 · 다른 카드가 필요 없음(기존 `compact-home-panel` 행은 `items`로 함께 넣을 수 있음)
 
 ![알림과 빠른 조작 칩이 있는 그룹을 보여주는 오버뷰](images/overview-card-ko.jpg)
 
@@ -17,23 +29,31 @@
 
 </details>
 
-한눈에 훑기 쉽고 바로 조작할 수 있는 대시보드 오버뷰입니다. **그룹**(기본은 탭 단위, 방 단위도 가능)마다 헤더에 굵은 **상태 요약**을 보여주고 아래에 **빠른 조작 칩**을 둡니다. 조명은 눌러서 켜고 끄고, 냉난방은 −/+로 조절하고, 센서는 눌러서 상세를 봅니다. 그룹 제목을 누르면 세부 내용이 있는 탭으로 이동합니다. 맨 위 **알림 띠**는 확인이 필요한 항목만 보여주고, 이상이 없으면 공간을 차지하지 않습니다.
+## 요구사항
 
-`custom:compact-overview-card` · JavaScript 한 파일 · 다른 카드가 필요 없음(기존 `compact-home-panel` 행은 `items`로 함께 넣을 수 있음)
-
-[카드 가이드](docs/compact-overview-card.md) · [쇼케이스](docs/showcase.md) · [쇼케이스 설정](examples/showcase.yaml) · [기준 문서](STANDARDS.md)
-
-## 시각 편집기
-
-카드 추가 화면에서 카드를 고르면(미리보기가 표시됩니다) UI로 바로 편집할 수 있습니다. 카드 제목과 열 수, 알림, 그룹별 이름·아이콘·탭 이동 경로·헤더 요약(켜진 수, 냉난방, 값 하나)·헤더 센서 값·빠른 조작 칩을 추가, 순서 변경, 삭제할 수 있습니다. compact `items` 행, `tiles`, `status`/`health` 요약 항목은 코드 편집기(YAML)에서 편집하며 편집기를 거쳐도 그대로 보존됩니다. 카드 추가 화면의 기본 구성은 가지고 계신 조명, 냉난방, 센서로 자동 생성됩니다.
-
-![카드 미리보기와 나란히 보이는 시각 편집기](images/visual-editor.jpg)
+`color-mix`와 컨테이너 쿼리를 지원하는 Home Assistant 프런트엔드가 필요합니다. 빠른 조작 칩은 단독으로 작동합니다. `items`로 `compact-home-panel` 행을 넣으려면 [Compact Cards](https://github.com/eigger/hass-compact-cards)도 설치합니다.
 
 ## 설치
 
-`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 JavaScript 모듈로 등록합니다 (`/local/compact-overview-card.js`). 칩은 다른 카드가 필요 없습니다. `items`로 `compact-home-panel` 행을 함께 넣는 경우에만 [Compact Cards](https://github.com/eigger/hass-compact-cards)도 설치하세요. HACS 사용 시 Custom repositories에 이 저장소를 **Dashboard**로 추가합니다.
+[![Home Assistant에서 대시보드 카드 저장소 열기](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-overview-cards&category=plugin)
 
-## 예제
+Home Assistant 2026.11 이상에서는 **설정 → 마켓플레이스**에서 설치합니다.
+
+1. 위 배지로 저장소를 엽니다. 직접 추가하려면 **설정 → 마켓플레이스 → 링크에서 추가**에서 <https://github.com/eigger/hass-overview-cards>을 입력합니다. 안내가 표시되면 GitHub 계정을 연결합니다.
+2. **설치**를 선택하고 브라우저를 새로고침합니다. 마켓플레이스는 카드를 대시보드 리소스에 모듈로 추가합니다. 리소스를 YAML로 관리하는 경우 설치 화면에 표시된 항목을 직접 추가합니다. [대시보드 카드 설치 방식](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
+3. 대시보드에서 카드를 추가하고 [빠른 시작](#빠른-시작)의 예제를 참고합니다.
+
+이전 Home Assistant에서 HACS를 사용하는 경우 아래 절차를 따릅니다.
+
+### HACS 설치
+
+[이 저장소](https://github.com/eigger/hass-overview-cards)를 HACS의 **사용자 지정 저장소(Custom repositories)** 에 추가하고 유형을 **Dashboard**로 선택합니다. 기본 카탈로그에는 등록되어 있지 않습니다. 카드를 다운로드한 뒤 브라우저를 새로고침하고 대시보드 리소스에 `/hacsfiles/hass-overview-cards/compact-overview-card.js`가 JavaScript 모듈로 등록되어 있는지 확인합니다.
+
+### 수동 설치
+
+`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 `/local/compact-overview-card.js`를 JavaScript 모듈로 등록합니다. 브라우저를 새로고침한 뒤 카드를 추가합니다.
+
+## 빠른 시작
 
 ```yaml
 type: custom:compact-overview-card
@@ -68,7 +88,15 @@ sections:
 
 조작 없는 요약 격자만 원하면 `sections` 대신 `tiles`를 사용합니다. [가이드](docs/compact-overview-card.md)를 참고하세요.
 
-## 그룹 (`sections`)
+## 설정
+
+### 시각 편집기
+
+카드 추가 화면에서 카드를 고르면(미리보기가 표시됩니다) UI로 바로 편집할 수 있습니다. 카드 제목과 열 수, 알림, 그룹별 이름·아이콘·탭 이동 경로·헤더 요약(켜진 수, 냉난방, 값 하나)·헤더 센서 값·빠른 조작 칩을 추가, 순서 변경, 삭제할 수 있습니다. compact `items` 행, `tiles`, `status`/`health` 요약 항목은 코드 편집기(YAML)에서 편집하며 편집기를 거쳐도 그대로 보존됩니다. 카드 추가 화면의 기본 구성은 가지고 계신 조명, 냉난방, 센서로 자동 생성됩니다.
+
+![카드 미리보기와 나란히 보이는 시각 편집기](images/visual-editor.jpg)
+
+### 그룹 (`sections`)
 
 | 옵션 | 필수 | 설명 |
 | --- | --- | --- |
@@ -82,7 +110,7 @@ sections:
 
 최상위 `section_columns`(`auto`, `1`, `2`, `3`)와 `min_column_width`(280~900, 기본 460)가 그룹 열을 정합니다. `auto`는 들어갈 수 있는 만큼 같은 폭의 열(최대 3)을 쓰고, 640px 미만이거나 한 열만 들어가면 1열로 쌓습니다. **순서:** 그룹은 설정 순서대로, 그때그때 가장 짧은 열에 배치됩니다. 그래서 첫 줄은 1·2·3번 그룹이고 위에서 아래로 훑으면 설정 순서를 따릅니다. 상단이 맞고 열 폭이 같으며 빈틈이 없고, 열 하단은 조금 다를 수 있습니다. 그룹의 `column: 1|2|3`으로 열을 고정할 수 있습니다. PC에서 전체 폭을 쓰려면 Home Assistant 섹션 뷰에서 이 카드가 들어간 섹션에 `column_span`(예: `3`)을 지정하세요.
 
-### 빠른 조작 칩
+#### 빠른 조작 칩
 
 | 엔티티 | 칩 | 누르면 |
 | --- | --- | --- |
@@ -93,7 +121,7 @@ sections:
 
 칩 옵션: `entity`(필수), `name`, `icon`, `type`(`toggle`, `action`, `readout`, `climate`로 덮어쓰기), `tap_action`(`toggle`, `more-info`, `navigate`+`navigation_path`, `perform-action`+`perform_action`, 선택 `target`·`data`·`confirmation: { text }`). `unavailable` 엔티티는 흐리게 표시하고 서비스를 보내지 않으며 상세 정보는 열 수 있습니다.
 
-## 요약 타일 유형 (`tiles`, 그룹의 `summary`)
+### 요약 타일 유형 (`tiles`, 그룹의 `summary`)
 
 | type | 필수 | 표시 |
 | --- | --- | --- |
@@ -105,7 +133,7 @@ sections:
 
 타일 옵션: `name`(필수), `icon`, `navigation_path`(없으면 대표 엔티티 상세 정보). 조작 없는 격자는 `tiles`를 쓰며 `columns`(`auto`, `2`, `3`, `4`)는 타일에 적용됩니다.
 
-## 규칙 참고
+### 규칙 참고
 
 - `count`는 `on` 상태만 켜짐으로 셉니다(cover의 `open`, lock 등은 세지 않음).
 - 임계값은 포함 비교입니다: `above 35`는 35 이상, `below 20`은 20 이하. 숫자가 아닌 값은 무시합니다.
@@ -113,9 +141,12 @@ sections:
 - `secondary_entity`가 `unavailable`이면 보조 줄은 표시하지 않습니다.
 - YAML 모드 대시보드에서는 `on`/`off`를 따옴표 없이 쓰면 불리언으로 읽힙니다. 카드가 이를 `on`/`off`로 되돌려 비교하지만 따옴표를 권장합니다.
 - 타일 탭은 `navigation_path`로 이동하고, 없으면 동작 중이거나 최악 수준인 엔티티의 상세 정보를 엽니다.
-- 최소 Home Assistant 프런트엔드는 `color-mix`와 컨테이너 쿼리를 지원하는 최신 버전을 전제합니다.
 
-## 원칙
+## 중요 제한사항
+
+최소 버전은 검증하지 않았습니다. 이 문서의 스크린샷은 모의 상태를 사용하며, 실제 Home Assistant에서 시각 편집기와 기기 조작은 확인이 필요합니다.
+
+### 원칙
 
 - 서비스는 설정한 칩을 눌렀을 때만 호출하며 자동으로 호출하지 않습니다. `unavailable` 엔티티에는 명령을 보내지 않고, 요청 중 중복 탭은 막습니다.
 - 정상/위험 기준은 카드가 추측하지 않습니다. `thresholds`, `problem`, `alerts.when`에 사용자가 쓴 규칙만 적용합니다.
@@ -124,10 +155,31 @@ sections:
 - 타일 순서는 설정 순서를 유지하고 상태에 따라 재배치하지 않습니다.
 - 알림이 없으면 알림 영역은 높이를 차지하지 않고, 제목 옆에 `✓ 이상 없음` 배지만 표시합니다.
 
-## 개발
+## 문서
+
+[카드 가이드](docs/compact-overview-card.md) · [쇼케이스](docs/showcase.md) · [쇼케이스 설정](examples/showcase.yaml) · [기준 문서](STANDARDS.md)
+
+### 개발
 
 ```bash
-npm install
+npm ci
 npm run check
 npm test
 ```
+
+[공유 검사 workflow](.github/workflows/check.yml)는 일반 푸시와 PR에서 Node.js 22로 문법 검사와 DOM 테스트를 실행하고 번들 파일을 확인합니다. 실제 Home Assistant에서의 표시와 기기 동작은 별도로 확인해야 합니다.
+
+Dependabot은 npm과 GitHub Actions 의존성을 매주 검사합니다. 중앙 workflow의 새 버전도 갱신 PR로 제안합니다. patch·minor는 필수 CI를 통과하면 자동 스쿼시 병합할 수 있으며 major는 수동 검토합니다. 중앙 workflow 참조를 갱신할 때 기준 문서의 버전과 SHA도 맞춥니다. [기준 문서(영어)](STANDARDS.md) · [검증 기록(영어)](ADOPTION_CHECKLIST.md)
+
+### 배포
+
+[변경 기록](CHANGELOG.md)에 사용자 영향과 필요한 조치를 남기고, 개발 검사를 실행합니다. `package.json` 버전과 일치하는 안정 태그 `vX.Y.Z`를 푸시하면 [공유 릴리스 workflow](.github/workflows/release.yml)가 같은 커밋에서 검증하고 별도 게시 작업에서 `compact-overview-card.js`를 GitHub Release에 첨부합니다. 사전 릴리스는 수동으로 게시합니다.
+
+## 지원
+
+- [Issues](https://github.com/eigger/hass-overview-cards/issues)에서 버그를 신고하거나 기능을 요청합니다.
+- [Discussions](https://github.com/eigger/hass-overview-cards/discussions)에서 질문하거나 사용 경험을 공유합니다.
+
+## 관련 프로젝트
+
+- [Compact Cards](https://github.com/eigger/hass-compact-cards)는 `items`에 선택적으로 넣는 홈 패널 행을 제공합니다.
