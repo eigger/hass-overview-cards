@@ -3,6 +3,7 @@
   "version": "0.5.2",
   "private": true,
   "description": "Overview cards for Home Assistant: category summary tiles and attention alerts.",
+  "license": "MIT",
   "scripts": {
     "check": "node --check compact-overview-card.js",
     "test": "node --test"

@@ -40,4 +40,6 @@ Before the first release, create a tag matching `package.json`, confirm the rele
 - The current Dependabot auto-merge reference is immutable tag `@v1.1.5` (`f56987f7f765a774c926fb8005fe5df68bb32451`). The initial review above describes the setup at the time.
 - The following checks passed on macOS with Node.js 22.22.0 and npm 10.9.4. `npm ci`, `npm run check`, `npm test` (35 passed), `test -s compact-overview-card.js`, `git diff --check`, and actionlint 1.7.12 for all three caller workflows.
 - The [migration PR #4](https://github.com/eigger/hass-overview-cards/pull/4) records the tested head, independent review, GitHub Actions run, and branch protection evidence for `check / test`.
-- TODO includes exercising publishing from a real release tag, confirming HACS installation and live HA rendering, verifying minimum HA, and obtaining the owner's license selection.
+- TODO includes exercising publishing from a real release tag, confirming Marketplace installation and live HA rendering, and verifying minimum HA.
+
+On 2026-11-08 the repository owner selected [MIT](LICENSE). The README and npm metadata identify the same license.

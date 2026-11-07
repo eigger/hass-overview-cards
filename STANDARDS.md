@@ -38,7 +38,11 @@ The repository is published as [eigger/hass-overview-cards](https://github.com/e
 ## Card workflow adoption · 2026-11-07
 
 - This repository uses the Home Assistant dashboard card profile (CARD-01–08). Reviewed immutable [v1.2.0](https://github.com/eigger/hass-repo-standards/releases/tag/v1.2.0) resolves to `66ab62181edb0a4a1bc0fe53209905b8f637633c`. Both card callers use the immutable version tag `@v1.2.0`.
-- Under CARD-02, CARD-03, CARD-04 and CARD-08, HACS resolves `compact-overview-card.js`. The shared check runs the syntax check and tests on Node.js 22 and verifies that the existing bundle is nonempty. The release caller uses the same bundle and checks. It validates the stable `v*` tag against `package.json` and passes the bundle to a separate publishing job. Handle prereleases manually.
+- Under CARD-02, CARD-03, CARD-04 and CARD-08, Marketplace resolves `compact-overview-card.js` from the plugin manifest. The shared check runs the syntax check and tests on Node.js 22 and verifies that the existing bundle is nonempty. The release caller uses the same bundle and checks. It validates the stable `v*` tag against `package.json` and passes the bundle to a separate publishing job. Handle prereleases manually.
 - Under CARD-05, weekly npm and GitHub Actions checks remain configured. The generic Dependabot auto-merge and cleanup workflow uses immutable tag [v1.1.5](https://github.com/eigger/hass-repo-standards/releases/tag/v1.1.5), commit `f56987f7f765a774c926fb8005fe5df68bb32451`. It evaluates trusted PR metadata for patch/minor auto-merge without running PR code.
 - Under CARD-06 and CARD-07, the bilingual documentation and [verification record](ADOPTION_CHECKLIST.md) apply to this card. Integration-specific tooling is outside the card profile.
-- To close the remaining CARD-02 item, the repository owner needs to select a license before a root LICENSE can be added. The minimum supported HA version and live HACS installation/rendering need verification. The repository owner will revisit these items when the license is selected or a live HA environment is available.
+- CARD-02 records the repository owner’s MIT license selection in [LICENSE](LICENSE). The minimum supported HA version and live Marketplace installation and rendering need verification. The repository owner will revisit these checks when a live HA environment is available.
+
+## README installation and license · 2026-11-08
+
+- The repository owner's documentation request approves a CARD-06 exception for this card. The README covers Marketplace on Home Assistant 2026.11 or later and direct JavaScript installation. Users on earlier versions can follow the manual steps. The repository owner will revisit this choice when the card's support policy changes.
