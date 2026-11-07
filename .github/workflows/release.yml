@@ -1,4 +1,4 @@
-# Shared standards; pinned to the reviewed exact release (CARD-03).
+# Shared standards; use the reviewed immutable release's exact version tag (CARD-03).
 name: Release
 'on':
   push:
@@ -13,7 +13,7 @@ jobs:
   release:
     permissions:
       contents: write
-    uses: eigger/hass-repo-standards/.github/workflows/card-release.yml@66ab62181edb0a4a1bc0fe53209905b8f637633c # v1.2.0
+    uses: eigger/hass-repo-standards/.github/workflows/card-release.yml@v1.2.0
     with:
       node-version: '22'
       check-script: check
