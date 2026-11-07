@@ -1,44 +1,22 @@
+# Shared standards; pinned to the reviewed exact release (CARD-03).
 name: Release
-on:
+'on':
   push:
     tags:
-      - 'v*'
+    - v*
 permissions:
   contents: read
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run check
-      - run: npm test
-      - name: Check release version
-        run: node -e "const v = require('./package.json').version; if (!/^\d+\.\d+\.\d+$/.test(v) || process.env.GITHUB_REF_NAME !== 'v' + v) process.exit(1)"
   release:
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Publish card bundle
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: gh release create "$GITHUB_REF_NAME" compact-overview-card.js --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
+    uses: eigger/hass-repo-standards/.github/workflows/card-release.yml@66ab62181edb0a4a1bc0fe53209905b8f637633c # v1.2.0
+    with:
+      node-version: '22'
+      check-script: check
+      test-script: test
+      build-script: ''
+      bundle-path: compact-overview-card.js
