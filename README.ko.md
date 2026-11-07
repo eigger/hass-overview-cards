@@ -5,8 +5,10 @@ Home Assistant 대시보드에서 알림, 그룹별 상태 요약, 빠른 조작
 [English](README.md) | **한국어**
 
 [![Release](https://img.shields.io/github/v/release/eigger/hass-overview-cards?style=flat)](https://github.com/eigger/hass-overview-cards/releases)
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#설치)
-[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-overview-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-overview-cards/actions/workflows/check.yml)
+[![Marketplace Custom](https://img.shields.io/badge/Marketplace-Custom-41BDF5?style=flat)](#설치)
+[![Tests](https://img.shields.io/github/actions/workflow/status/eigger/hass-overview-cards/check.yml?branch=main&style=flat&label=Tests)](https://github.com/eigger/hass-overview-cards/actions/workflows/check.yml)
+[![License](https://img.shields.io/github/license/eigger/hass-overview-cards?style=flat)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/eigger/hass-overview-cards/latest/total?style=flat&label=Downloads)](https://github.com/eigger/hass-overview-cards/releases)
 
 ## 주요 기능
 
@@ -35,23 +37,23 @@ Home Assistant 대시보드에서 알림, 그룹별 상태 요약, 빠른 조작
 
 ## 설치
 
-[![Home Assistant에서 대시보드 카드 저장소 열기](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-overview-cards&category=plugin)
+[![Home Assistant 마켓플레이스에서 카드 저장소 열기](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=eigger&repository=hass-overview-cards&category=plugin)
 
-Home Assistant 2026.11 이상에서는 **설정 → 마켓플레이스**에서 설치합니다.
+Home Assistant 2026.11 이상에서 마켓플레이스를 이용합니다.
 
-1. 위 배지로 저장소를 엽니다. 직접 추가하려면 **설정 → 마켓플레이스 → 링크에서 추가**에서 <https://github.com/eigger/hass-overview-cards>을 입력합니다. 안내가 표시되면 GitHub 계정을 연결합니다.
-2. **설치**를 선택하고 브라우저를 새로고침합니다. 마켓플레이스는 카드를 대시보드 리소스에 모듈로 추가합니다. 리소스를 YAML로 관리하는 경우 설치 화면에 표시된 항목을 직접 추가합니다. [대시보드 카드 설치 방식](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
-3. 대시보드에서 카드를 추가하고 [빠른 시작](#빠른-시작)의 예제를 참고합니다.
-
-이전 Home Assistant에서 HACS를 사용하는 경우 아래 절차를 따릅니다.
-
-### HACS 설치
-
-[이 저장소](https://github.com/eigger/hass-overview-cards)를 HACS의 **사용자 지정 저장소(Custom repositories)** 에 추가하고 유형을 **Dashboard**로 선택합니다. 기본 카탈로그에는 등록되어 있지 않습니다. 카드를 다운로드한 뒤 브라우저를 새로고침하고 대시보드 리소스에 `/hacsfiles/hass-overview-cards/compact-overview-card.js`가 JavaScript 모듈로 등록되어 있는지 확인합니다.
+1. 위 배지를 누르거나 **설정 → 마켓플레이스 → 링크에서 추가**에 <https://github.com/eigger/hass-overview-cards> 주소를 입력합니다. 안내가 표시되면 GitHub 계정을 연결합니다.
+2. **설치**를 누르고 브라우저를 새로고침합니다. 리소스를 YAML로 관리한다면 설치 화면에 표시된 항목을 추가합니다.
+3. 대시보드에 카드를 추가합니다. [빠른 시작](#빠른-시작)
 
 ### 수동 설치
 
-`compact-overview-card.js`를 `/config/www/`에 복사하고 대시보드 리소스에 `/local/compact-overview-card.js`를 JavaScript 모듈로 등록합니다. 브라우저를 새로고침한 뒤 카드를 추가합니다.
+1. [최신 릴리스](https://github.com/eigger/hass-overview-cards/releases/latest)의 `compact-overview-card.js`를 `/config/www/`에 복사합니다. 폴더가 없다면 생성합니다.
+2. 대시보드 리소스에 아래 URL을 **JavaScript 모듈**로 추가하고 브라우저를 새로고침합니다. YAML로 관리한다면 기존 리소스 목록에 아래 항목을 추가합니다.
+
+```yaml
+url: /local/compact-overview-card.js
+type: module
+```
 
 ## 빠른 시작
 
@@ -183,3 +185,7 @@ Dependabot은 npm과 GitHub Actions 의존성을 매주 검사합니다. 중앙 
 ## 관련 프로젝트
 
 - [Compact Cards](https://github.com/eigger/hass-compact-cards)는 `items`에 선택적으로 넣는 홈 패널 행을 제공합니다.
+
+## 라이선스
+
+이 프로젝트는 [MIT 라이선스](LICENSE)를 따릅니다.

@@ -5,8 +5,10 @@ A custom Home Assistant dashboard card with alerts, grouped status summaries, an
 **English** | [한국어](README.ko.md)
 
 [![Release](https://img.shields.io/github/v/release/eigger/hass-overview-cards?style=flat)](https://github.com/eigger/hass-overview-cards/releases)
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#installation)
-[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-overview-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-overview-cards/actions/workflows/check.yml)
+[![Marketplace Custom](https://img.shields.io/badge/Marketplace-Custom-41BDF5?style=flat)](#installation)
+[![Tests](https://img.shields.io/github/actions/workflow/status/eigger/hass-overview-cards/check.yml?branch=main&style=flat&label=Tests)](https://github.com/eigger/hass-overview-cards/actions/workflows/check.yml)
+[![License](https://img.shields.io/github/license/eigger/hass-overview-cards?style=flat)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/eigger/hass-overview-cards/latest/total?style=flat&label=Downloads)](https://github.com/eigger/hass-overview-cards/releases)
 
 ## Features
 
@@ -35,23 +37,23 @@ The Home Assistant frontend must support `color-mix` and container queries. Quic
 
 ## Installation
 
-[![Open the dashboard card repository in Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-overview-cards&category=plugin)
+[![Open the card repository in Home Assistant Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=eigger&repository=hass-overview-cards&category=plugin)
 
-On Home Assistant 2026.11 or later, install from **Settings → Marketplace**.
+Use Marketplace on Home Assistant 2026.11 or later.
 
-1. Open the repository with the badge above. To add it yourself, go to **Settings → Marketplace → Add from link** and enter <https://github.com/eigger/hass-overview-cards>. Connect GitHub if prompted.
-2. Select **Install** and reload the browser. Marketplace adds the card as a dashboard module resource. If you manage resources in YAML, copy the entry shown in the install dialog. [Dashboard card installation](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
-3. Add the card to your dashboard using the [quick start](#quick-start).
-
-For earlier Home Assistant versions with HACS, follow the steps below.
-
-### HACS installation
-
-Add [this repository](https://github.com/eigger/hass-overview-cards) in HACS **Custom repositories** and select **Dashboard**. It is outside the default catalog. Download the card, reload the browser, and check that `/hacsfiles/hass-overview-cards/compact-overview-card.js` is registered as a JavaScript module in dashboard resources.
+1. Click the badge above, or enter <https://github.com/eigger/hass-overview-cards> in **Settings → Marketplace → Add from link**. Connect GitHub if prompted.
+2. Select **Install** and reload the browser. If you manage resources in YAML, add the entry shown in the install dialog.
+3. Add the card to your dashboard. [Quick start](#quick-start)
 
 ### Manual installation
 
-Copy `compact-overview-card.js` to `/config/www/` and register `/local/compact-overview-card.js` as a JavaScript module in dashboard resources. Reload the browser, then add the card.
+1. Copy `compact-overview-card.js` from the [latest release](https://github.com/eigger/hass-overview-cards/releases/latest) to `/config/www/`. Create the folder if needed.
+2. Add the URL below as a **JavaScript module** in dashboard resources and reload the browser. If you manage resources in YAML, add the entry to your existing resource list.
+
+```yaml
+url: /local/compact-overview-card.js
+type: module
+```
 
 ## Quick start
 
@@ -183,3 +185,7 @@ Record user impact and required actions in the [changelog](CHANGELOG.md), then r
 ## Related Projects
 
 - [Compact Cards](https://github.com/eigger/hass-compact-cards) provides the optional home-panel rows used by `items`.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
