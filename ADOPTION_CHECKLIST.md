@@ -33,3 +33,11 @@ Scope and applicability: [STANDARDS.md](STANDARDS.md). This is a card-specific r
 The primary agent implemented the card and repository configuration; an independent subagent reviewed it and its findings were applied. Group actions (for example turning every light off) and the richer tile options proposed in the UX review are intentionally out of scope. Direct control is provided by quick-control chips (`controls`) that call Home Assistant services only on a tap; unavailable entities are never commanded, duplicates are blocked, and failures notify. Embedding Compact Cards `compact-home-panel` rows (`items`) remains optional. Live-device behaviour of the chips has not been verified here.
 
 Before the first release, create a tag matching `package.json`, confirm the release job and asset, and verify installation and rendering in Home Assistant. Record those results separately; the TODO entries above are not passes.
+
+## Card workflow migration · 2026-11-07
+
+- This migration started from `f4f619542d4098af88666894e0a3a45118766793` on `main`. The card workflows use immutable tag `@v1.2.0` (`66ab62181edb0a4a1bc0fe53209905b8f637633c`).
+- The current Dependabot auto-merge reference is immutable tag `@v1.1.5` (`f56987f7f765a774c926fb8005fe5df68bb32451`). The initial review above describes the setup at the time.
+- The following checks passed on macOS with Node.js 22.22.0 and npm 10.9.4. `npm ci`, `npm run check`, `npm test` (35 passed), `test -s compact-overview-card.js`, `git diff --check`, and actionlint 1.7.12 for all three caller workflows.
+- The [migration PR #4](https://github.com/eigger/hass-overview-cards/pull/4) records the tested head, independent review, GitHub Actions run, and branch protection evidence for `check / test`.
+- TODO includes exercising publishing from a real release tag, confirming HACS installation and live HA rendering, verifying minimum HA, and obtaining the owner's license selection.

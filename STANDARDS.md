@@ -1,6 +1,6 @@
 # Standards reference
 
-## Review scope
+## Initial review scope
 
 - Date: 2026-10-31.
 - Reference: `eigger/hass-repo-standards` commit `ef7762d769a1df8a405412fb4467f87df69aaee6`, the same reference used by [hass-compact-cards](https://github.com/eigger/hass-compact-cards). This is a reference review, not adoption of a published standards release or the integration profile.
@@ -31,8 +31,14 @@
 
 The concrete commands, versions, results and outstanding checks are recorded in [ADOPTION_CHECKLIST.md](ADOPTION_CHECKLIST.md).
 
-## Repository setup
+## Initial repository setup
 
 The repository is published as [eigger/hass-overview-cards](https://github.com/eigger/hass-overview-cards) with `main` as its default branch. Settings mirror `hass-compact-cards`: squash auto-merge, branch deletion, read-only default workflow permissions and a strict required status check for the card's `test` job. Pull requests require no additional approving review, linear history is required, force pushes and branch deletion are disabled, and administrators retain their existing bypass capability. The funding account is `eigger`.
 
-Only the generic Dependabot auto-merge/cleanup workflow is reused from standards `v1.1.4`, pinned to its verified commit `a90531d05613597632a4c10c11ce1dbc45e0bab6`: it accepts same-repository Dependabot PRs against the default branch, allows only patch/minor auto-merge, and checks metadata without executing PR code. This is standalone CI reuse, not central enrollment or automatic standards adoption.
+## Card workflow adoption · 2026-11-07
+
+- This repository uses the Home Assistant dashboard card profile (CARD-01–08). Reviewed immutable [v1.2.0](https://github.com/eigger/hass-repo-standards/releases/tag/v1.2.0) resolves to `66ab62181edb0a4a1bc0fe53209905b8f637633c`. Both card callers use the immutable version tag `@v1.2.0`.
+- Under CARD-02, CARD-03, CARD-04 and CARD-08, HACS resolves `compact-overview-card.js`. The shared check runs the syntax check and tests on Node.js 22 and verifies that the existing bundle is nonempty. The release caller uses the same bundle and checks. It validates the stable `v*` tag against `package.json` and passes the bundle to a separate publishing job. Handle prereleases manually.
+- Under CARD-05, weekly npm and GitHub Actions checks remain configured. The generic Dependabot auto-merge and cleanup workflow uses immutable tag [v1.1.5](https://github.com/eigger/hass-repo-standards/releases/tag/v1.1.5), commit `f56987f7f765a774c926fb8005fe5df68bb32451`. It evaluates trusted PR metadata for patch/minor auto-merge without running PR code.
+- Under CARD-06 and CARD-07, the bilingual documentation and [verification record](ADOPTION_CHECKLIST.md) apply to this card. Integration-specific tooling is outside the card profile.
+- To close the remaining CARD-02 item, the repository owner needs to select a license before a root LICENSE can be added. The minimum supported HA version and live HACS installation/rendering need verification. The repository owner will revisit these items when the license is selected or a live HA environment is available.

@@ -1,6 +1,18 @@
-# Overview Cards
+# Overview Cards for Home Assistant
+
+A custom Home Assistant dashboard card with alerts, grouped status summaries, and quick controls.
 
 **English** | [한국어](README.ko.md)
+
+[![Release](https://img.shields.io/github/v/release/eigger/hass-overview-cards?style=flat)](https://github.com/eigger/hass-overview-cards/releases)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#installation)
+[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-overview-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-overview-cards/actions/workflows/check.yml)
+
+## Features
+
+An overview page for Home Assistant that keeps the familiar layout: **sections that group controls (by default one section per dashboard tab, or per room if you prefer), each with a summary in the header and the real controls underneath**, plus an **alert strip** for things that need attention. Quick-control chips toggle lights, adjust climate setpoints, and open sensor details from the overview. A group title can open its dashboard tab. The alert strip takes no space when no alert matches. Groups can also embed [Compact Cards](https://github.com/eigger/hass-compact-cards) `compact-home-panel` rows.
+
+`custom:compact-overview-card` · one JavaScript file · no other card required (existing `compact-home-panel` rows can still be embedded with `items`)
 
 ![Overview with alerts and groups with quick controls](images/overview-card.jpg)
 
@@ -17,25 +29,31 @@
 
 </details>
 
-An overview page for Home Assistant that keeps the familiar layout: **sections that group controls (by default one section per dashboard tab, or per room if you prefer), each with a summary in the header and the real controls underneath**, plus an **alert strip** for things that need attention. Controls are [Compact Cards](https://github.com/eigger/hass-compact-cards) `compact-home-panel` rows, so lights toggle, climate adjusts and sensors open their details right on the overview.
+## Requirements
 
-`custom:compact-overview-card` · one JavaScript file · no other card required (existing `compact-home-panel` rows can still be embedded with `items`)
-
-[Card guide](docs/compact-overview-card.md) · [Showcase](docs/showcase.md) · [Showcase configuration](examples/showcase.yaml) · [Standards reference](STANDARDS.md)
-
-## Visual editor
-
-Add the card from the card picker (it shows a live preview) and edit it in the UI: card title and columns, alerts, and per group the name, icon, tab link, header summary (count, climate, value), header readings and quick-control chips, with add, reorder and delete. Compact `items` rows, `tiles` and the `status`/`health` summary items stay editable in the code editor and are preserved untouched. The picker's starter configuration is built from your own lights, climate entities and sensors.
-
-![Visual editor next to the live card](images/visual-editor.jpg)
+The Home Assistant frontend must support `color-mix` and container queries. Quick-control chips work on their own. Install [Compact Cards](https://github.com/eigger/hass-compact-cards) if you embed `compact-home-panel` rows with `items`.
 
 ## Installation
 
-Install through HACS **Custom repositories** (category **Dashboard**), or copy `compact-overview-card.js` to `/config/www/` and register `/local/compact-overview-card.js` as a JavaScript module in dashboard resources. This project is not in the default HACS catalog.
+[![Open the dashboard card repository in Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-overview-cards&category=plugin)
 
-Chips need nothing else. Only if you embed `compact-home-panel` rows with `items`, also install [Compact Cards](https://github.com/eigger/hass-compact-cards). It uses `color-mix` and container queries, so it needs a recent Home Assistant frontend.
+On Home Assistant 2026.11 or later, install from **Settings → Marketplace**.
 
-## Example
+1. Open the repository with the badge above. To add it yourself, go to **Settings → Marketplace → Add from link** and enter <https://github.com/eigger/hass-overview-cards>. Connect GitHub if prompted.
+2. Select **Install** and reload the browser. Marketplace adds the card as a dashboard module resource. If you manage resources in YAML, copy the entry shown in the install dialog. [Dashboard card installation](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
+3. Add the card to your dashboard using the [quick start](#quick-start).
+
+For earlier Home Assistant versions with HACS, follow the steps below.
+
+### HACS installation
+
+Add [this repository](https://github.com/eigger/hass-overview-cards) in HACS **Custom repositories** and select **Dashboard**. It is outside the default catalog. Download the card, reload the browser, and check that `/hacsfiles/hass-overview-cards/compact-overview-card.js` is registered as a JavaScript module in dashboard resources.
+
+### Manual installation
+
+Copy `compact-overview-card.js` to `/config/www/` and register `/local/compact-overview-card.js` as a JavaScript module in dashboard resources. Reload the browser, then add the card.
+
+## Quick start
 
 ```yaml
 type: custom:compact-overview-card
@@ -70,7 +88,15 @@ sections:
 
 Prefer a controls-free summary grid? Use `tiles` instead of `sections`; see [the guide](docs/compact-overview-card.md).
 
-## Groups (`sections`)
+## Configuration
+
+### Visual editor
+
+Add the card from the card picker (it shows a live preview) and edit it in the UI: card title and columns, alerts, and per group the name, icon, tab link, header summary (count, climate, value), header readings and quick-control chips, with add, reorder and delete. Compact `items` rows, `tiles` and the `status`/`health` summary items stay editable in the code editor and are preserved untouched. The picker's starter configuration is built from your own lights, climate entities and sensors.
+
+![Visual editor next to the live card](images/visual-editor.jpg)
+
+### Groups (`sections`)
 
 | Option | Required | Description |
 | --- | --- | --- |
@@ -84,7 +110,7 @@ Prefer a controls-free summary grid? Use `tiles` instead of `sections`; see [the
 
 Top-level `section_columns` (`auto`, `1`, `2`, `3`) and `min_column_width` (280–900, default 460) control the group columns. `auto` uses as many equal-width columns as fit (up to 3); below 640px, or when only one fits, groups stack in one column. **Order:** groups are placed in the configured order, each into the currently shortest column, so the first row is groups 1, 2, 3 and reading down the page follows the configured order. Tops are aligned, column widths are equal, and there are no gaps; column bottoms may differ slightly. Pin a group with `column: 1|2|3`. Put the card in a section with `column_span` (for example `3`) in Home Assistant's sections view to use the full width on a PC.
 
-### Quick-control chips
+#### Quick-control chips
 
 | Entity | Chip | Tap |
 | --- | --- | --- |
@@ -95,7 +121,7 @@ Top-level `section_columns` (`auto`, `1`, `2`, `3`) and `min_column_width` (280�
 
 Per chip: `entity` (required), `name`, `icon`, `type` (`toggle`, `action`, `readout`, `climate` to override), and `tap_action` (`toggle`, `more-info`, `navigate` with `navigation_path`, or `perform-action` with `perform_action`, optional `target`, `data` and `confirmation: { text }`). Unavailable entities are dimmed and never sent a service call; their details still open.
 
-## Summary tile types (`tiles`, and `summary` of a section)
+### Summary tile types (`tiles`, and `summary` of a section)
 
 | type | Required | Shows |
 | --- | --- | --- |
@@ -107,7 +133,7 @@ Per chip: `entity` (required), `name`, `icon`, `type` (`toggle`, `action`, `read
 
 Tile options: `name` (required), `icon`, `navigation_path`. Use `tiles` for a controls-free grid; `columns` (`auto`, `2`, `3`, `4`) applies to tiles.
 
-## Rules
+### Rules
 
 - `count` counts only the `on` state (not `open` covers, locks and so on).
 - Thresholds are inclusive: `above 35` matches 35, `below 20` matches 20. Non-numeric values are ignored.
@@ -116,7 +142,11 @@ Tile options: `name` (required), `icon`, `navigation_path`. Use `tiles` for a co
 - In YAML-mode dashboards an unquoted `on`/`off` is read as a boolean. The card maps it back, but quoting is recommended.
 - Tapping a tile follows `navigation_path`; without one it opens the entity that explains the summary (the running item or the worst item).
 
-## Principles
+## Important limitations
+
+A minimum version has yet to be verified. The screenshots use mocked states. The visual editor and device controls need verification in a live Home Assistant instance.
+
+### Principles
 
 - The card never guesses what is normal. Only your `thresholds`, `problem` and `when` rules apply.
 - Services are called only by chips you configured and only on a tap, never automatically. Unavailable entities are never sent commands, and duplicate taps are blocked while a request is running.
@@ -125,10 +155,31 @@ Tile options: `name` (required), `icon`, `navigation_path`. Use `tiles` for a co
 - Tile order follows your configuration and never reshuffles with state.
 - With no alerts the alert area takes no height; only a `✓ 이상 없음` badge remains beside the title.
 
-## Development
+## Documentation
+
+[Card guide](docs/compact-overview-card.md) · [Showcase](docs/showcase.md) · [Showcase configuration](examples/showcase.yaml) · [Standards reference](STANDARDS.md)
+
+### Development
 
 ```bash
-npm install
+npm ci
 npm run check
 npm test
 ```
+
+The [shared check workflow](.github/workflows/check.yml) runs syntax checks and DOM tests on Node.js 22 and verifies the bundle on ordinary pushes and pull requests. Verify rendering and device behavior separately in a live Home Assistant instance.
+
+Dependabot checks npm and GitHub Actions dependencies weekly and proposes updates to the central workflows in pull requests. Patch and minor updates can squash-merge automatically after required CI passes. Major updates require manual review. When a central workflow reference changes, update its version and resolved SHA in the standards record as well. [Standards record](STANDARDS.md) · [Verification record](ADOPTION_CHECKLIST.md)
+
+### Publishing
+
+Record user impact and required actions in the [changelog](CHANGELOG.md), then run the development checks. Push a stable `vX.Y.Z` tag matching `package.json`. The [shared release workflow](.github/workflows/release.yml) validates that commit, then attaches `compact-overview-card.js` to the GitHub release in a separate publishing job. Publish prereleases manually.
+
+## Support
+
+- [Issues](https://github.com/eigger/hass-overview-cards/issues) for bug reports and feature requests.
+- [Discussions](https://github.com/eigger/hass-overview-cards/discussions) for questions and shared experiences.
+
+## Related Projects
+
+- [Compact Cards](https://github.com/eigger/hass-compact-cards) provides the optional home-panel rows used by `items`.
