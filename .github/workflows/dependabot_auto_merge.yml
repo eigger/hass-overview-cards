@@ -13,4 +13,4 @@ jobs:
       contents: write
       pull-requests: write
     # Reuse only the generic Dependabot workflow from the reviewed immutable release.
-    uses: eigger/hass-repo-standards/.github/workflows/dependabot-auto-merge.yml@v1.1.5
+    uses: eigger/hass-repo-standards/.github/workflows/dependabot-auto-merge.yml@v1.2.0
