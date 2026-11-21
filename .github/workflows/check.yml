@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   check:
-    uses: eigger/hass-repo-standards/.github/workflows/card-check.yml@v1.2.0
+    uses: eigger/hass-repo-standards/.github/workflows/card-check.yml@v1.3.1
     with:
       node-version: '22'
       check-script: check
