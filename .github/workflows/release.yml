@@ -13,7 +13,7 @@ jobs:
   release:
     permissions:
       contents: write
-    uses: eigger/hass-repo-standards/.github/workflows/card-release.yml@v1.3.1
+    uses: eigger/hass-repo-standards/.github/workflows/card-release.yml@v1.3.3
     with:
       node-version: '22'
       check-script: check
